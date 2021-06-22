@@ -66,12 +66,12 @@
 #include "PointwiseFunctions/AnalyticSolutions/WaveEquation/PlaneWave.hpp"  // IWYU pragma: keep
 #include "PointwiseFunctions/AnalyticSolutions/WaveEquation/RegularSphericalWave.hpp"  // IWYU pragma: keep
 #include "PointwiseFunctions/MathFunctions/MathFunction.hpp"
-#include "Time/Actions/AdvanceTime.hpp"                // IWYU pragma: keep
-#include "Time/Actions/ChangeSlabSize.hpp"             // IWYU pragma: keep
-#include "Time/Actions/ChangeStepSize.hpp"             // IWYU pragma: keep
-#include "Time/Actions/RecordTimeStepperData.hpp"      // IWYU pragma: keep
-#include "Time/Actions/SelfStartActions.hpp"           // IWYU pragma: keep
-#include "Time/Actions/UpdateU.hpp"                    // IWYU pragma: keep
+#include "Time/Actions/AdvanceTime.hpp"            // IWYU pragma: keep
+#include "Time/Actions/ChangeSlabSize.hpp"         // IWYU pragma: keep
+#include "Time/Actions/ChangeStepSize.hpp"         // IWYU pragma: keep
+#include "Time/Actions/RecordTimeStepperData.hpp"  // IWYU pragma: keep
+#include "Time/Actions/SelfStartActions.hpp"       // IWYU pragma: keep
+#include "Time/Actions/UpdateU.hpp"                // IWYU pragma: keep
 #include "Time/StepChoosers/ByBlock.hpp"
 #include "Time/StepChoosers/Factory.hpp"
 #include "Time/StepChoosers/StepChooser.hpp"
@@ -127,6 +127,7 @@ struct EvolutionMetavars {
   struct factory_creation
       : tt::ConformsTo<Options::protocols::FactoryCreation> {
     using factory_classes = tmpl::map<
+<<<<<<< HEAD
         tmpl::pair<DenseTrigger, DenseTriggers::standard_dense_triggers>,
         tmpl::pair<Event, tmpl::flatten<tmpl::list<
                               Events::Completion,
@@ -139,6 +140,22 @@ struct EvolutionMetavars {
             tmpl::push_back<
                 StepChoosers::standard_step_choosers<system>,
                 StepChoosers::ByBlock<StepChooserUse::LtsStep, volume_dim>>>,
+=======
+        tmpl::pair<Event,
+                   tmpl::flatten<tmpl::list<
+                       Events::Completion,
+                       dg::Events::field_observations<
+                           volume_dim, Tags::Time,
+                           tmpl::push_back<
+                               observe_fields,
+                               ScalarWave::Tags::EnergyDensity<volume_dim>>,
+                           analytic_solution_fields>,
+                       Events::time_events<system>>>>,
+        tmpl::pair<StepChooser<StepChooserUse::LtsStep>,
+                   tmpl::push_back<StepChoosers::standard_step_choosers<system>,
+                                   StepChoosers::ByBlock<
+                                       StepChooserUse::LtsStep, volume_dim>>>,
+>>>>>>> 638d3a1... Add EnergyDensity function and tags for the scalar wave
         tmpl::pair<StepChooser<StepChooserUse::Slab>,
                    tmpl::push_back<StepChoosers::standard_slab_choosers<
                                        system, local_time_stepping>,
@@ -228,8 +245,9 @@ struct EvolutionMetavars {
                  ScalarWave::Actions::InitializeConstraints<volume_dim>,
                  Initialization::Actions::AddComputeTags<tmpl::push_back<
                      StepChoosers::step_chooser_compute_tags<EvolutionMetavars>,
-                     evolution::Tags::AnalyticCompute<
-                         Dim, initial_data_tag, analytic_solution_fields>>>,
+                     evolution::Tags::AnalyticCompute<Dim, initial_data_tag,
+                                                      analytic_solution_fields>,
+                     ScalarWave::Tags::EnergyDensityCompute<volume_dim>>>,
                  ::evolution::dg::Initialization::Mortars<volume_dim, system>,
                  evolution::Actions::InitializeRunEventsAndDenseTriggers,
                  Initialization::Actions::RemoveOptionsAndTerminatePhase>;
@@ -250,16 +268,16 @@ struct EvolutionMetavars {
 
           Parallel::PhaseActions<
               Phase, Phase::Evolve,
-              tmpl::list<Actions::RunEventsAndTriggers, Actions::ChangeSlabSize,
-                         step_actions, Actions::AdvanceTime,
-                         PhaseControl::Actions::ExecutePhaseChange<
-                             phase_changes>>>>>;
+              tmpl::list<
+                  Actions::RunEventsAndTriggers, Actions::ChangeSlabSize,
+                  step_actions, Actions::AdvanceTime,
+                  PhaseControl::Actions::ExecutePhaseChange<phase_changes>>>>>;
 
   template <typename ParallelComponent>
   struct registration_list {
     using type =
         std::conditional_t<std::is_same_v<ParallelComponent, dg_element_array>,
-      dg_registration_list, tmpl::list<>>;
+                           dg_registration_list, tmpl::list<>>;
   };
 
   using component_list =
@@ -278,10 +296,9 @@ struct EvolutionMetavars {
       const Phase& current_phase,
       const Parallel::CProxy_GlobalCache<EvolutionMetavars>&
           cache_proxy) noexcept {
-    const auto next_phase =
-        PhaseControl::arbitrate_phase_change<phase_changes>(
-            phase_change_decision_data, current_phase,
-            *(cache_proxy.ckLocalBranch()));
+    const auto next_phase = PhaseControl::arbitrate_phase_change<phase_changes>(
+        phase_change_decision_data, current_phase,
+        *(cache_proxy.ckLocalBranch()));
     if (next_phase.has_value()) {
       return next_phase.value();
     }
@@ -310,7 +327,8 @@ struct EvolutionMetavars {
 };
 
 static const std::vector<void (*)()> charm_init_node_funcs{
-    &setup_error_handling, &setup_memory_allocation_failure_reporting,
+    &setup_error_handling,
+    &setup_memory_allocation_failure_reporting,
     &disable_openblas_multithreading,
     &domain::creators::register_derived_with_charm,
     &domain::creators::time_dependence::register_derived_with_charm,
