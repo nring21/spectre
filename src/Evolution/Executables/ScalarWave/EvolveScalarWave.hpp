@@ -127,6 +127,7 @@ struct EvolutionMetavars {
   struct factory_creation
       : tt::ConformsTo<Options::protocols::FactoryCreation> {
     using factory_classes = tmpl::map<
+<<<<<<< HEAD
         tmpl::pair<DenseTrigger, DenseTriggers::standard_dense_triggers>,
         tmpl::pair<Event, tmpl::flatten<tmpl::list<
                               Events::Completion,
@@ -134,6 +135,18 @@ struct EvolutionMetavars {
                                   volume_dim, Tags::Time, observe_fields,
                                   analytic_solution_fields>,
                               Events::time_events<system>>>>,
+=======
+        tmpl::pair<Event,
+                   tmpl::flatten<tmpl::list<
+                       Events::Completion,
+                       dg::Events::field_observations<
+                           volume_dim, Tags::Time,
+                           tmpl::push_back<
+                               observe_fields,
+                               ScalarWave::Tags::EnergyDensity<volume_dim>>,
+                           analytic_solution_fields>,
+                       Events::time_events<system>>>>,
+>>>>>>> 18c7050... Fixup EvolveScalarWave.hpp executable
         tmpl::pair<StepChooser<StepChooserUse::LtsStep>,
                    tmpl::push_back<StepChoosers::standard_step_choosers<system>,
                                    StepChoosers::ByBlock<

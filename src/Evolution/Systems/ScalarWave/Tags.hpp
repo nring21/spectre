@@ -104,5 +104,28 @@ struct EvolvedFieldsFromCharacteristicFields : db::SimpleTag {
     return "EvolvedFieldsFromCharacteristicFields";
   }
 };
+<<<<<<< HEAD
+=======
+
+/// The energy density of the scalar wave
+template <size_t SpatialDim>
+struct EnergyDensity : db::SimpleTag {
+  using type = Scalar<DataVector>;
+};
+
+/// Computes the energy density of the scalar wave
+template <size_t SpatialDim>
+struct EnergyDensityCompute : EnergyDensity<SpatialDim>, db::ComputeTag {
+  using base = EnergyDensity<SpatialDim>;
+  using return_type = Scalar<DataVector>;
+  static void function(
+      const gsl::not_null<Scalar<DataVector>*> result,
+      const Scalar<DataVector>& pi,
+      const tnsr::i<DataVector, SpatialDim, Frame::Inertial>& phi) noexcept {
+    ScalarWave::energy_density<SpatialDim>(result, pi, phi);
+  };
+  using argument_tags = tmpl::list<ScalarWave::Pi, ScalarWave::Phi<SpatialDim>>;
+};
+>>>>>>> 18c7050... Fixup EvolveScalarWave.hpp executable
 }  // namespace Tags
 }  // namespace ScalarWave
