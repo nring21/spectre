@@ -20,6 +20,11 @@
 #include "Utilities/TMPL.hpp"
 
 namespace {
+template <size_t SpatialDim, typename DataType>
+void test_compute_item_in_databox() noexcept {
+  TestHelpers::db::test_simple_tag<ScalarWave::Tags::EnergyDensity<SpatialDim>>(
+      "EnergyDensity");
+}
 template <size_t SpatialDim>
 void test_energy_density(const Scalar<DataVector>& used_for_size) {
   void (*f)(const gsl::not_null<Scalar<DataVector>*>, const Scalar<DataVector>&,
