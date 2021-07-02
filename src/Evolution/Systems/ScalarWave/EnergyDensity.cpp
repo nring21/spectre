@@ -34,7 +34,7 @@ Scalar<DataVector> energy_density(
 
 #define INSTANTIATE(_, data)                           \
   template void ScalarWave::energy_density(            \
-      const gsl::not_null<Scalar<DataVector>*> result, \
+      gsl::not_null<Scalar<DataVector>*> result,       \
       const Scalar<DataVector>& pi,                    \
       const tnsr::i<DataVector, DIM(data), Frame::Inertial>& phi) noexcept;
 
