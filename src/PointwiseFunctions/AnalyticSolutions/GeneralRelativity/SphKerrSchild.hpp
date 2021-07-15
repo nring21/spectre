@@ -8,7 +8,7 @@
 #include <pup.h>
 
 #include "DataStructures/CachedTempBuffer.hpp"
-#include "DataStructures/Tags/Tempij.hpp"
+#include "DataStructures/Tags/TempTensor.hpp"
 #include "DataStructures/Tensor/TypeAliases.hpp"
 #include "NumericalAlgorithms/LinearOperators/PartialDerivatives.hpp"
 #include "Options/Options.hpp"
@@ -184,6 +184,9 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
       internal_tags::matrix_G1<DataType, Frame>,
       internal_tags::matrix_G2<DataType, Frame>,
       internal_tags::inv_jacobian<DataType, Frame>,
+
+      // missing matrix_E1, matrix_E2, deriv_inv_jacobian ???
+
       internal_tags::x_kerr_schild<DataType>, internal_tags::den<DataType>,
       internal_tags::a_cross_x<DataType, Frame>,
       internal_tags::a_dot_x_squared<DataType>,
@@ -214,7 +217,8 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
     void operator()(
         gsl::not_null<tnsr::I<DataType, 3, Frame>*> x_sph_minus_center,
         gsl::not_null<CachedBuffer*> /*cache*/,
-        internal_tags::x_minus_center<DataType, Frame> /*meta*/) const noexcept;
+        internal_tags::x_sph_minus_center<DataType, Frame> /*meta*/)
+        const noexcept;
 
     void operator()(gsl::not_null<Scalar<DataType>*> r_squared,
                     gsl::not_null<CachedBuffer*> cache,
@@ -240,157 +244,159 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
     void operator()(
         gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_P,
         gsl::not_null<CachedBuffer*> cache,
-        internal_tags::matrix_F<DataType, Frame> /*meta*/) const noexcept;
+        internal_tags::matrix_P<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
         gsl::not_null<tnsr::ij<DataType, 3, Frame>*> jacobian,
         gsl::not_null<CachedBuffer*> cache,
-        internal_tags::matrix_F<DataType, Frame> /*meta*/) const noexcept;
+        internal_tags::jacobian<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
         gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_D,
         gsl::not_null<CachedBuffer*> cache,
-        internal_tags::matrix_F<DataType, Frame> /*meta*/) const noexcept;
+        internal_tags::matrix_D<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
         gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_C,
         gsl::not_null<CachedBuffer*> cache,
-        internal_tags::matrix_F<DataType, Frame> /*meta*/) const noexcept;
+        internal_tags::matrix_C<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
         gsl::not_null<tnsr::ij<DataType, 3, Frame>*> deriv_jacobian,
         gsl::not_null<CachedBuffer*> cache,
-        internal_tags::matrix_F<DataType, Frame> /*meta*/) const noexcept;
+        internal_tags::deriv_jacobian<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> Q,
+        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_Q,
         gsl::not_null<CachedBuffer*> cache,
-        internal_tags::matrix_F<DataType, Frame> /*meta*/) const noexcept;
+        internal_tags::matrix_Q<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
         gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_G1,
         gsl::not_null<CachedBuffer*> cache,
-        internal_tags::matrix_F<DataType, Frame> /*meta*/) const noexcept;
+        internal_tags::matrix_G1<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
         gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_G2,
         gsl::not_null<CachedBuffer*> cache,
-        internal_tags::matrix_F<DataType, Frame> /*meta*/) const noexcept;
+        internal_tags::matrix_G2<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
         gsl::not_null<tnsr::ij<DataType, 3, Frame>*> inv_jacobian,
         gsl::not_null<CachedBuffer*> cache,
-        internal_tags::matrix_F<DataType, Frame> /*meta*/) const noexcept;
+        internal_tags::inv_jacobian<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
         gsl::not_null<Scalar<DataType>*> x_kerr_schild,
         gsl::not_null<CachedBuffer*> cache,
-        internal_tags::a_dot_x_squared<DataType> /*meta*/) const noexcept;
+        internal_tags::x_kerr_schild<DataType> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<Scalar<DataType>*> den,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::a_dot_x_squared<DataType> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<Scalar<DataType>*> den,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     internal_tags::a_dot_x_squared<DataType> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<tnsr::i<DataType, 3, Frame>*> a_cross_x,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::a_dot_x_over_rsquared<DataType> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<tnsr::i<DataType, 3, Frame>*> a_cross_x,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     internal_tags::a_dot_x_over_rsquared<DataType> /*meta*/) const
+    //     noexcept;
 
-    void operator()(
-        gsl::not_null<Scalar<DataType>*> a_dot_x_squared,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::a_dot_x_squared<DataType> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<Scalar<DataType>*> a_dot_x_squared,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     internal_tags::a_dot_x_squared<DataType> /*meta*/) const noexcept;
 
-    void operator()(gsl::not_null<Scalar<DataType>*> H_denom,
-                    gsl::not_null<CachedBuffer*> cache,
-                    internal_tags::H_denom<DataType> /*meta*/) const noexcept;
+    // void operator()(gsl::not_null<Scalar<DataType>*> H_denom,
+    //                 gsl::not_null<CachedBuffer*> cache,
+    //                 internal_tags::H_denom<DataType> /*meta*/) const
+    //                 noexcept;
 
-    void operator()(gsl::not_null<Scalar<DataType>*> H,
-                    gsl::not_null<CachedBuffer*> cache,
-                    internal_tags::H<DataType> /*meta*/) const noexcept;
+    // void operator()(gsl::not_null<Scalar<DataType>*> H,
+    //                 gsl::not_null<CachedBuffer*> cache,
+    //                 internal_tags::H<DataType> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<Scalar<DataType>*> deriv_H_temp1,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::deriv_H_temp1<DataType> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<Scalar<DataType>*> deriv_H_temp1,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     internal_tags::deriv_H_temp1<DataType> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<Scalar<DataType>*> deriv_H_temp2,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::deriv_H_temp2<DataType> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<Scalar<DataType>*> deriv_H_temp2,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     internal_tags::deriv_H_temp2<DataType> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<tnsr::i<DataType, 3, Frame>*> deriv_H,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::deriv_H<DataType, Frame> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<tnsr::i<DataType, 3, Frame>*> deriv_H,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     internal_tags::deriv_H<DataType, Frame> /*meta*/) const noexcept;
 
-    void operator()(gsl::not_null<Scalar<DataType>*> denom,
-                    gsl::not_null<CachedBuffer*> cache,
-                    internal_tags::denom<DataType> /*meta*/) const noexcept;
+    // void operator()(gsl::not_null<Scalar<DataType>*> denom,
+    //                 gsl::not_null<CachedBuffer*> cache,
+    //                 internal_tags::denom<DataType> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<Scalar<DataType>*> a_dot_x_over_r,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::a_dot_x_over_r<DataType> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<Scalar<DataType>*> a_dot_x_over_r,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     internal_tags::a_dot_x_over_r<DataType> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<tnsr::i<DataType, 3, Frame>*> null_form,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::null_form<DataType, Frame> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<tnsr::i<DataType, 3, Frame>*> null_form,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     internal_tags::null_form<DataType, Frame> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> deriv_null_form,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::deriv_null_form<DataType, Frame> /*meta*/)
-        const noexcept;
+    // void operator()(
+    //     gsl::not_null<tnsr::ij<DataType, 3, Frame>*> deriv_null_form,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     internal_tags::deriv_null_form<DataType, Frame> /*meta*/)
+    //     const noexcept;
 
-    void operator()(
-        gsl::not_null<Scalar<DataType>*> lapse_squared,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::lapse_squared<DataType> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<Scalar<DataType>*> lapse_squared,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     internal_tags::lapse_squared<DataType> /*meta*/) const noexcept;
 
-    void operator()(gsl::not_null<Scalar<DataType>*> lapse,
-                    gsl::not_null<CachedBuffer*> cache,
-                    gr::Tags::Lapse<DataType> /*meta*/) const noexcept;
+    // void operator()(gsl::not_null<Scalar<DataType>*> lapse,
+    //                 gsl::not_null<CachedBuffer*> cache,
+    //                 gr::Tags::Lapse<DataType> /*meta*/) const noexcept;
 
-    void operator()(gsl::not_null<Scalar<DataType>*> deriv_lapse_multiplier,
-                    gsl::not_null<CachedBuffer*> cache,
-                    internal_tags::deriv_lapse_multiplier<DataType> /*meta*/)
-        const noexcept;
+    // void operator()(gsl::not_null<Scalar<DataType>*> deriv_lapse_multiplier,
+    //                 gsl::not_null<CachedBuffer*> cache,
+    //                 internal_tags::deriv_lapse_multiplier<DataType> /*meta*/)
+    //     const noexcept;
 
-    void operator()(
-        gsl::not_null<Scalar<DataType>*> shift_multiplier,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::shift_multiplier<DataType> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<Scalar<DataType>*> shift_multiplier,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     internal_tags::shift_multiplier<DataType> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<tnsr::I<DataType, 3, Frame>*> shift,
-        gsl::not_null<CachedBuffer*> cache,
-        gr::Tags::Shift<3, Frame, DataType> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<tnsr::I<DataType, 3, Frame>*> shift,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     gr::Tags::Shift<3, Frame, DataType> /*meta*/) const noexcept;
 
-    void operator()(gsl::not_null<tnsr::iJ<DataType, 3, Frame>*> deriv_shift,
-                    gsl::not_null<CachedBuffer*> cache,
-                    DerivShift<DataType, Frame> /*meta*/) const noexcept;
+    // void operator()(gsl::not_null<tnsr::iJ<DataType, 3, Frame>*> deriv_shift,
+    //                 gsl::not_null<CachedBuffer*> cache,
+    //                 DerivShift<DataType, Frame> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<tnsr::ii<DataType, 3, Frame>*> spatial_metric,
-        gsl::not_null<CachedBuffer*> cache,
-        gr::Tags::SpatialMetric<3, Frame, DataType> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<tnsr::ii<DataType, 3, Frame>*> spatial_metric,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     gr::Tags::SpatialMetric<3, Frame, DataType> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<tnsr::ijj<DataType, 3, Frame>*> deriv_spatial_metric,
-        gsl::not_null<CachedBuffer*> cache,
-        DerivSpatialMetric<DataType, Frame> /*meta*/) const noexcept;
+    // void operator()(
+    //     gsl::not_null<tnsr::ijj<DataType, 3, Frame>*> deriv_spatial_metric,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     DerivSpatialMetric<DataType, Frame> /*meta*/) const noexcept;
 
-    void operator()(
-        gsl::not_null<tnsr::ii<DataType, 3, Frame>*> dt_spatial_metric,
-        gsl::not_null<CachedBuffer*> cache,
-        ::Tags::dt<gr::Tags::SpatialMetric<3, Frame, DataType>> /*meta*/)
-        const noexcept;
+    // void operator()(
+    //     gsl::not_null<tnsr::ii<DataType, 3, Frame>*> dt_spatial_metric,
+    //     gsl::not_null<CachedBuffer*> cache,
+    //     ::Tags::dt<gr::Tags::SpatialMetric<3, Frame, DataType>> /*meta*/)
+    //     const noexcept;
 
    private:
-    const KerrSchild& solution_;
+    const SphKerrSchild& solution_;
     const tnsr::I<DataType, 3, Frame>& x_;
     double null_vector_0_;
   };
