@@ -121,32 +121,34 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
     using matrix_Q = ::Tags::Tempij<11, 3, Frame, DataType>;
     template <typename DataType, typename Frame = ::Frame::Inertial>
     using matrix_G1 = ::Tags::Tempij<12, 3, Frame, DataType>;
+    template <typename DataType>
+    using s_number = ::Tags::TempScalar<13, DataType>;
     template <typename DataType, typename Frame = ::Frame::Inertial>
-    using matrix_G2 = ::Tags::Tempij<13, 3, Frame, DataType>;
+    using matrix_G2 = ::Tags::Tempij<14, 3, Frame, DataType>;
     template <typename DataType, typename Frame = ::Frame::Inertial>
-    using inv_jacobian = ::Tags::Tempij<14, 3, Frame, DataType>;
+    using inv_jacobian = ::Tags::Tempij<15, 3, Frame, DataType>;
     template <typename DataType, typename Frame = ::Frame::Inertial>
-    using matrix_E1 = ::Tags::Tempij<15, 3, Frame, DataType>;
+    using matrix_E1 = ::Tags::Tempij<16, 3, Frame, DataType>;
     template <typename DataType, typename Frame = ::Frame::Inertial>
-    using matrix_E2 = ::Tags::Tempij<16, 3, Frame, DataType>;
+    using matrix_E2 = ::Tags::Tempij<17, 3, Frame, DataType>;
     template <typename DataType, typename Frame = ::Frame::Inertial>
-    using deriv_inv_jacobian = ::Tags::Tempij<17, 3, Frame, DataType>;
-    template <typename DataType>
-    using x_kerr_schild = ::Tags::TempScalar<18, DataType>;
-    template <typename DataType>
-    using den = ::Tags::TempScalar<19, DataType>;
+    using deriv_inv_jacobian = ::Tags::Tempij<18, 3, Frame, DataType>;
     template <typename DataType, typename Frame = ::Frame::Inertial>
-    using a_cross_x = ::Tags::TempI<20, 3, Frame, DataType>;
+    using x_kerr_schild = ::Tags::TempI<19, 3, Frame, DataType>;
     template <typename DataType>
-    using a_dot_x_squared = ::Tags::TempScalar<21, DataType>;
+    using den = ::Tags::TempScalar<20, DataType>;
+    template <typename DataType, typename Frame = ::Frame::Inertial>
+    using a_cross_x = ::Tags::TempI<21, 3, Frame, DataType>;
     template <typename DataType>
-    using H_denom = ::Tags::TempScalar<22, DataType>;
+    using a_dot_x_squared = ::Tags::TempScalar<22, DataType>;
     template <typename DataType>
-    using H = ::Tags::TempScalar<23, DataType>;
+    using H_denom = ::Tags::TempScalar<23, DataType>;
     template <typename DataType>
-    using deriv_H_temp1 = ::Tags::TempScalar<24, DataType>;
+    using H = ::Tags::TempScalar<24, DataType>;
     template <typename DataType>
-    using deriv_H_temp2 = ::Tags::TempScalar<25, DataType>;
+    using deriv_H_temp1 = ::Tags::TempScalar<25, DataType>;
+    template <typename DataType>
+    using deriv_H_temp2 = ::Tags::TempScalar<26, DataType>;
     template <typename DataType, typename Frame = ::Frame::Inertial>
     using deriv_H = ::Tags::Tempi<26, 3, Frame, DataType>;
     template <typename DataType>
@@ -182,13 +184,14 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
       internal_tags::deriv_jacobian<DataType, Frame>,
       internal_tags::matrix_Q<DataType, Frame>,
       internal_tags::matrix_G1<DataType, Frame>,
+      internal_tags::s_number<DataType>,
       internal_tags::matrix_G2<DataType, Frame>,
       internal_tags::inv_jacobian<DataType, Frame>,
 
       // missing matrix_E1, matrix_E2, deriv_inv_jacobian ???
 
-      internal_tags::x_kerr_schild<DataType>, internal_tags::den<DataType>,
-      internal_tags::a_cross_x<DataType, Frame>,
+      internal_tags::x_kerr_schild<DataType, Frame>,
+      internal_tags::den<DataType>, internal_tags::a_cross_x<DataType, Frame>,
       internal_tags::a_dot_x_squared<DataType>,
       internal_tags::H_denom<DataType>, internal_tags::H<DataType>,
       internal_tags::deriv_H_temp1<DataType>,
@@ -237,59 +240,63 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
                     internal_tags::a_dot_x<DataType> /*meta*/) const noexcept;
 
     void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_F,
+        gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_F,
         gsl::not_null<CachedBuffer*> cache,
         internal_tags::matrix_F<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_P,
+        gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_P,
         gsl::not_null<CachedBuffer*> cache,
         internal_tags::matrix_P<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> jacobian,
+        gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> jacobian,
         gsl::not_null<CachedBuffer*> cache,
         internal_tags::jacobian<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_D,
+        gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_D,
         gsl::not_null<CachedBuffer*> cache,
         internal_tags::matrix_D<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_C,
+        gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_C,
         gsl::not_null<CachedBuffer*> cache,
         internal_tags::matrix_C<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> deriv_jacobian,
+        gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> deriv_jacobian,
         gsl::not_null<CachedBuffer*> cache,
         internal_tags::deriv_jacobian<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_Q,
+        gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_Q,
         gsl::not_null<CachedBuffer*> cache,
         internal_tags::matrix_Q<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_G1,
+        gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_G1,
         gsl::not_null<CachedBuffer*> cache,
         internal_tags::matrix_G1<DataType, Frame> /*meta*/) const noexcept;
 
+    void operator()(gsl::not_null<Scalar<DataType>*> s_number,
+                    gsl::not_null<CachedBuffer*> cache,
+                    internal_tags::s_number<DataType> /*meta*/) const noexcept;
+
     void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> matrix_G2,
+        gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_G2,
         gsl::not_null<CachedBuffer*> cache,
         internal_tags::matrix_G2<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
-        gsl::not_null<tnsr::ij<DataType, 3, Frame>*> inv_jacobian,
+        gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> inv_jacobian,
         gsl::not_null<CachedBuffer*> cache,
         internal_tags::inv_jacobian<DataType, Frame> /*meta*/) const noexcept;
 
     void operator()(
-        gsl::not_null<Scalar<DataType>*> x_kerr_schild,
-        gsl::not_null<CachedBuffer*> cache,
-        internal_tags::x_kerr_schild<DataType> /*meta*/) const noexcept;
+        gsl::not_null<tnsr::I<DataType, 3, Frame>*> x_kerr_schild,
+        gsl::not_null<CachedBuffer*> /*cache*/,
+        internal_tags::x_kerr_schild<DataType, Frame> /*meta*/) const noexcept;
 
     // void operator()(
     //     gsl::not_null<Scalar<DataType>*> den,

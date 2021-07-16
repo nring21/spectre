@@ -20,6 +20,8 @@
 #include "Utilities/StdArrayHelpers.hpp"
 #include "Utilities/StdHelpers.hpp"
 
+#include <iostream>
+
 namespace gr::Solutions {
 
 SphKerrSchild::SphKerrSchild(const double mass,
@@ -76,7 +78,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
       cache->get_var(internal_tags::x_sph_minus_center<DataType, Frame>{});
 
   for (size_t i = 0; i < 3; ++i) {
-    r_squared->get(i) += square(x_sph_minus_center.get(i))
+    r_squared->get() += square(x_sph_minus_center.get(i));
   }
 }
 
@@ -118,28 +120,29 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
                   spin_a[2] * get<2>(x_sph_minus_center);
 }
 
-// TEST
 template <typename DataType, typename Frame>
 void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_F,
     const gsl::not_null<CachedBuffer*> cache,
-    internal_tags::matrix_F<DataType> /*meta*/) const noexcept {
+    internal_tags::matrix_F<DataType, Frame> /*meta*/) const noexcept {
   const auto spin_a = solution_.dimensionless_spin() * solution_.mass();
   const auto a_squared =
       std::inner_product(spin_a.begin(), spin_a.end(), spin_a.begin(), 0.);
   const auto& rho = get(cache->get_var(internal_tags::rho<DataType>{}));
   const auto& r = get(cache->get_var(internal_tags::r<DataType>{}));
 
-  auto matrix_F = tnsr::ij<DataVector, Dim, Frame::Inertial> matrix_F{
-      9, -1. / rho / cube(r)};
-
-  // F matrix
   for (int i = 0; i < 3; ++i) {
-    for (int j = i; j < 3; ++j) {
+    for (int j = 0; j < 3; ++j) {
+      matrix_F->get(i, j) = -1. / rho / cube(r);
+    }
+  }
+  // F matrix
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = 0; j < 3; ++j) {
       if (i == j) {
-        matrix_F->get(i, j) *= (a_squared - spin_a.get(i) * spin_a.get(j));
+        matrix_F->get(i, j) *= (a_squared - spin_a[i] * spin_a[j]);
       } else {
-        matrix_F->get(i, j) *= -spin_a.get(i) * spin_a.get(j);
+        matrix_F->get(i, j) *= -spin_a[i] * spin_a[j];
       }
     }
   }
@@ -150,23 +153,24 @@ template <typename DataType, typename Frame>
 void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_P,
     const gsl::not_null<CachedBuffer*> cache,
-    internal_tags::matrix_P<DataType> /*meta*/) const noexcept {
+    internal_tags::matrix_P<DataType, Frame> /*meta*/) const noexcept {
   const auto spin_a = solution_.dimensionless_spin() * solution_.mass();
-  const auto a_squared =
-      std::inner_product(spin_a.begin(), spin_a.end(), spin_a.begin(), 0.);
   const auto& rho = get(cache->get_var(internal_tags::rho<DataType>{}));
+  const auto& r = get(cache->get_var(internal_tags::r<DataType>{}));
 
-  auto matrix_P = tnsr::Ij<DataVector, Dim, Frame::Inertial> matrix_P{
-      9, -1. / (rho + r) / r};
-
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = 0; j < 3; ++j) {
+      matrix_P->get(i, j) = -1. / (rho + r) / r;
+    }
+  }
   // P matrix
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = 0; j < 3; ++j) {
       if (i == j) {
-        matrix_P->get(i, j) *= spin_a.get(i) * spin_a.get(j);
+        matrix_P->get(i, j) *= spin_a[i] * spin_a[j];
         matrix_P->get(i, j) += rho / r;
       } else {
-        matrix_P->get(i, j) *= spin_a.get(i) * spin_a.get(j);
+        matrix_P->get(i, j) *= spin_a[i] * spin_a[j];
       }
     }
   }
@@ -175,22 +179,21 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 // TEST
 template <typename DataType, typename Frame>
 void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
-    const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> jacobian const
-        gsl::not_null<CachedBuffer*>
-            cache,
-    internal_tags::jacobian<DataType> /*meta*/) const noexcept {
+    const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> jacobian,
+    const gsl::not_null<CachedBuffer*> cache,
+    internal_tags::jacobian<DataType, Frame> /*meta*/) const noexcept {
   const auto& x_sph_minus_center =
       cache->get_var(internal_tags::x_sph_minus_center<DataType, Frame>{});
   const auto& matrix_F =
       cache->get_var(internal_tags::matrix_F<DataType, Frame>{});
   const auto& matrix_P =
       cache->get_var(internal_tags::matrix_P<DataType, Frame>{});
-  auto jacobian = tnsr::Ij<DataVector, Dim, Frame::Inertial> jacobian{9, 0.};
 
   // Jacobian
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      jacobian->get(i, j) = matrix_P.get(i, j) for (int k = 0; k < 3; ++k) {
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = 0; j < 3; ++j) {
+      jacobian->get(i, j) = matrix_P.get(i, j);
+      for (size_t k = 0; k < 3; ++k) {
         jacobian->get(i, j) += matrix_F.get(i, k) * x_sph_minus_center.get(k) *
                                x_sph_minus_center.get(j);
       }
@@ -203,23 +206,25 @@ template <typename DataType, typename Frame>
 void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_D,
     const gsl::not_null<CachedBuffer*> cache,
-    internal_tags::matrix_D<DataType> /*meta*/) const noexcept {
+    internal_tags::matrix_D<DataType, Frame> /*meta*/) const noexcept {
   const auto spin_a = solution_.dimensionless_spin() * solution_.mass();
   const auto a_squared =
       std::inner_product(spin_a.begin(), spin_a.end(), spin_a.begin(), 0.);
   const auto& rho = get(cache->get_var(internal_tags::rho<DataType>{}));
   const auto& r = get(cache->get_var(internal_tags::r<DataType>{}));
 
-  auto matrix_D = tnsr::Ij<DataVector, Dim, Frame::Inertial> matrix_D{
-      9, 1. / cube(rho) / r};
-
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = 0; j < 3; ++j) {
+      matrix_D->get(i, j) = 1. / cube(rho) / r;
+    }
+  }
   // D matrix
-  for (int i = 0; i < 3; ++i) {
-    for (int j = i; j < 3; ++j) {
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = i; j < 3; ++j) {
       if (i == j) {
-        matrix_D->get(i, j) *= (a_squared - spin_a.get(i) * spin_a.get(j));
+        matrix_D->get(i, j) *= (a_squared - spin_a[i] * spin_a[j]);
       } else {
-        matrix_D->get(i, j) *= -spin_a.get(i) * spin_a.get(j);
+        matrix_D->get(i, j) *= -spin_a[i] * spin_a[j];
       }
     }
   }
@@ -230,17 +235,15 @@ template <typename DataType, typename Frame>
 void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_C,
     const gsl::not_null<CachedBuffer*> cache,
-    internal_tags::matrix_C<DataType> /*meta*/) const noexcept {
+    internal_tags::matrix_C<DataType, Frame> /*meta*/) const noexcept {
   const auto& matrix_F =
       cache->get_var(internal_tags::matrix_F<DataType, Frame>{});
   const auto& matrix_D =
       cache->get_var(internal_tags::matrix_D<DataType, Frame>{});
 
-  auto matrix_C = tnsr::Ij<DataVector, Dim, Frame::Inertial> C_matrix{9, 0.};
-
   // C matrix
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = 0; j < 3; ++j) {
       matrix_C->get(i, j) = matrix_D.get(i, j) - 3. * matrix_F.get(i, j);
     }
   }
@@ -249,10 +252,9 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 // TEST
 template <typename DataType, typename Frame>
 void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
-    const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> deriv_jacobian const
-        gsl::not_null<CachedBuffer*>
-            cache,
-    internal_tags::deriv_jacobian<DataType> /*meta*/) const noexcept {
+    const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> deriv_jacobian,
+    const gsl::not_null<CachedBuffer*> cache,
+    internal_tags::deriv_jacobian<DataType, Frame> /*meta*/) const noexcept {
   const auto& matrix_C =
       cache->get_var(internal_tags::matrix_C<DataType, Frame>{});
   const auto& matrix_F =
@@ -262,22 +264,19 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   const auto& r_squared =
       get(cache->get_var(internal_tags::r_squared<DataType>{}));
 
-  auto deriv_jacobian =
-      tnsr::Ij<DataVector, Dim, Frame::Inertial> deriv_jacobian{9, 0.};
-
   // deriv_Jacobian
-  for (int k = 0; k < 3; ++k) {
-    for (int i = 0; i < 3; ++i) {
-      for (int j = 0; j < 3; ++j) {
-        deriv_jacobian->get(i, j, k) =
+  for (size_t k = 0; k < 3; ++k) {
+    for (size_t i = 0; i < 3; ++i) {
+      for (size_t j = 0; j < 3; ++j) {
+        deriv_jacobian->get(i, j) =
             matrix_F.get(i, j) * x_sph_minus_center.get(k) +
             matrix_F.get(i, k) * x_sph_minus_center.get(j);
-        for (int m = 0; m < 3; ++m) {
+        for (size_t m = 0; m < 3; ++m) {
           if (j == k) {  // j==k acts as a Kronecker delta
-            deriv_jacobian->get(i, j, k) +=
+            deriv_jacobian->get(i, j) +=
                 matrix_F.get(i, m) * x_sph_minus_center.get(m);
           }
-          deriv_jacobian->get(i, j, k) +=
+          deriv_jacobian->get(i, j) +=
               matrix_C.get(i, m) * x_sph_minus_center.get(k) *
               x_sph_minus_center.get(m) * x_sph_minus_center.get(j) / r_squared;
         }
@@ -289,25 +288,22 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 // TEST
 template <typename DataType, typename Frame>
 void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
-    const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_Q const
-        gsl::not_null<CachedBuffer*>
-            cache,
-    internal_tags::matrix_Q<DataType> /*meta*/) const noexcept {
+    const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_Q,
+    const gsl::not_null<CachedBuffer*> cache,
+    internal_tags::matrix_Q<DataType, Frame> /*meta*/) const noexcept {
   const auto spin_a = solution_.dimensionless_spin() * solution_.mass();
   const auto& rho = get(cache->get_var(internal_tags::rho<DataType>{}));
   const auto& r = get(cache->get_var(internal_tags::r<DataType>{}));
 
-  auto matrix_Q = tnsr::Ij<DataVector, Dim, Frame::Inertial> matrix_Q{
-      9, 1. / (rho + r) / rho};
-
   // Q matrix
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = 0; j < 3; ++j) {
+      matrix_Q->get(i, j) = 1. / (rho + r) / rho;
       if (i == j) {
-        matrix_Q->get(i, j) *= spin_a.get(i) * spin_a.get(j);
+        matrix_Q->get(i, j) *= spin_a[i] * spin_a[j];
         matrix_Q->get(i, j) += r / rho;
       } else {
-        matrix_Q->get(i, j) *= spin_a.get(i) * spin_a.get(j);
+        matrix_Q->get(i, j) *= spin_a[i] * spin_a[j];
       }
     }
   }
@@ -318,22 +314,20 @@ template <typename DataType, typename Frame>
 void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_G1,
     const gsl::not_null<CachedBuffer*> cache,
-    internal_tags::matrix_G1<DataType> /*meta*/) const noexcept {
+    internal_tags::matrix_G1<DataType, Frame> /*meta*/) const noexcept {
   const auto spin_a = solution_.dimensionless_spin() * solution_.mass();
   const auto a_squared =
       std::inner_product(spin_a.begin(), spin_a.end(), spin_a.begin(), 0.);
   const auto& rho = get(cache->get_var(internal_tags::rho<DataType>{}));
   const auto& r = get(cache->get_var(internal_tags::r<DataType>{}));
 
-  auto matrix_G1 = tnsr::ij<DataVector, Dim, Frame::Inertial> matrix_G1{
-      9, 1. / sqr(rho) / r};
-
-  for (int i = 0; i < 3; ++i) {
-    for (int j = i; j < 3; ++j) {
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = i; j < 3; ++j) {
+      matrix_G1->get(i, j) = 1. / square(rho) / r;
       if (i == j) {
-        matrix_G1->get(i, j) *= (a_squared - spin_a.get(i) * spin_a.get(j));
+        matrix_G1->get(i, j) *= (a_squared - spin_a[i] * spin_a[j]);
       } else {
-        matrix_G1->get(i, j) *= -spin_a.get(i) * spin_a.get(j);
+        matrix_G1->get(i, j) *= -spin_a[i] * spin_a[j];
       }
     }
   }
@@ -349,42 +343,46 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
       get(cache->get_var(internal_tags::r_squared<DataType>{}));
   const auto& a_dot_x = get(cache->get_var(internal_tags::a_dot_x<DataType>{}));
 
-  get(*s_number) = r_squared + sqr(a_dot_x) / r_squared;
+  get(*s_number) = r_squared + square(a_dot_x) / r_squared;
 }
-}  // namespace gr::Solutions
 
 // TEST
 template <typename DataType, typename Frame>
 void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> matrix_G2,
     const gsl::not_null<CachedBuffer*> cache,
-    internal_tags::matrix_G2<DataType> /*meta*/) const noexcept {
+    internal_tags::matrix_G2<DataType, Frame> /*meta*/) const noexcept {
   const auto& matrix_Q =
       cache->get_var(internal_tags::matrix_Q<DataType, Frame>{});
   const auto& rho = get(cache->get_var(internal_tags::rho<DataType>{}));
   const auto& r = get(cache->get_var(internal_tags::r<DataType>{}));
-  const auto& r_squared =
-      get(cache->get_var(internal_tags::r_squared<DataType>{}));
   const auto& s_number =
       get(cache->get_var(internal_tags::s_number<DataType>{}));
 
-  auto matrix_G2 =
-      tnsr::ij<DataVector, Dim, Frame::Inertial> matrix_G2{9, sqr(rho) / r};
-
-  for (int i = 0; i < 3; ++i) {
-    for (int j = i; j < 3; ++j) {
-      matrix_G2->get(i, j) *= matrix_Q.get(i, j) / s_number
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = i; j < 3; ++j) {
+      matrix_G2->get(i, j) = (square(rho) / r) * matrix_Q.get(i, j) / s_number;
     }
   }
 }
 
+// template <typename DataType, typename Frame>
+// void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+//     const gsl::not_null<Scalar<DataType>*> G1_dot_x,
+//     const gsl::not_null<CachedBuffer*> cache,
+//     internal_tags::G1_dot_x<DataType> /*meta*/) const noexcept {
+//   const auto& x_sph_minus_center =
+//       cache->get_var(internal_tags::x_sph_minus_center<DataType, Frame>{});
+
+//   get(*s_number) = r_squared + square(a_dot_x) / r_squared;
+// }
+
 // TEST
 template <typename DataType, typename Frame>
 void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
-    const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> inv_jacobian const
-        gsl::not_null<CachedBuffer*>
-            cache,
-    internal_tags::inv_jacobian<DataType> /*meta*/) const noexcept {
+    const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> inv_jacobian,
+    const gsl::not_null<CachedBuffer*> cache,
+    internal_tags::inv_jacobian<DataType, Frame> /*meta*/) const noexcept {
   const auto& matrix_Q =
       cache->get_var(internal_tags::matrix_Q<DataType, Frame>{});
   const auto& matrix_G1 =
@@ -394,22 +392,28 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   const auto& x_sph_minus_center =
       cache->get_var(internal_tags::x_sph_minus_center<DataType, Frame>{});
 
-  auto inv_jacobian =
-      tnsr::Ij<DataVector, Dim, Frame::Inertial> inv_jacobian{9, 0.};
+  tnsr::I<DataVector, 3, Frame> G1_dot_x{3, 0.};
+  tnsr::I<DataVector, 3, Frame> G2_dot_x{3, 0.};
+  tnsr::Ij<DataVector, 3, Frame> matrix_G{9, 0.};
 
   // G1dotx^i: G1^i_m xhat^m
   // G2dotx_j: G2^n_j xhat_n
-  for (int i = 0; i < 3; ++i) {
-    for (int m = 0; m < 3; ++m) {
-      const auto G1_dot_x[i] += matrix_G1.get(i, m) * x_sph_minus_center.get(m);
-      const auto G2_dot_x[i] += matrix_G2.get(m, i) * x_sph_minus_center.get(m);
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t m = 0; m < 3; ++m) {
+      G1_dot_x[i] += matrix_G1.get(i, m) * x_sph_minus_center.get(m);
+      G2_dot_x[i] += matrix_G2.get(m, i) * x_sph_minus_center.get(m);
     }
   }
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = 0; j < 3; ++i) {
+      matrix_G[i][j] = G1_dot_x[i] * G2_dot_x[j];
+    }
+  }
+
   // InvJacobian
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      inv_jacobian->get(i, j) =
-          matrix_Q.get(i, j) + G1_dot_x.get(i) * G2_dot_x.get(j);
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = 0; j < 3; ++j) {
+      inv_jacobian->get(i, j) = matrix_Q.get(i, j) + matrix_G[i][j];
     }
   }
 }
@@ -421,7 +425,7 @@ template <typename DataType, typename Frame>
 void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::I<DataType, 3, Frame>*> x_kerr_schild,
     const gsl::not_null<CachedBuffer*> cache,
-    internal_tags::x_kerr_schild<DataType> /*meta*/) const noexcept {
+    internal_tags::x_kerr_schild<DataType, Frame> /*meta*/) const noexcept {
   const auto spin_a = solution_.dimensionless_spin() * solution_.mass();
   const auto& x_sph_minus_center =
       cache->get_var(internal_tags::x_sph_minus_center<DataType, Frame>{});
@@ -429,9 +433,9 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   const auto& r = get(cache->get_var(internal_tags::r<DataType>{}));
   const auto& rho = get(cache->get_var(internal_tags::rho<DataType>{}));
 
-  for (int i = 0; i < 3; ++i) {
+  for (size_t i = 0; i < 3; ++i) {
     x_kerr_schild->get(i) = rho / r * x_sph_minus_center.get(i) -
-                            spin_a.get(i) * a_dot_x / r / (rho + r);
+                            spin_a[i] * a_dot_x / r / (rho + r);
   }
 }
 
@@ -443,4 +447,14 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 //                                               solution, x, null_vector_0_))
 //                                               {}
 
+#define DTYPE(data) BOOST_PP_TUPLE_ELEM(0, data)
+#define FRAME(data) BOOST_PP_TUPLE_ELEM(1, data)
+
+#define INSTANTIATE(_, data) \
+  template class SphKerrSchild::IntermediateComputer<DTYPE(data), FRAME(data)>;
+GENERATE_INSTANTIATIONS(INSTANTIATE, (DataVector, double),
+                        (::Frame::Inertial, ::Frame::Grid))
+#undef INSTANTIATE
+#undef DTYPE
+#undef FRAME
 }  // namespace gr::Solutions

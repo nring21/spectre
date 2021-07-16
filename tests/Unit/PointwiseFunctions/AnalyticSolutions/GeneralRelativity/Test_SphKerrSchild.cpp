@@ -65,8 +65,9 @@ void test_sph_kerr_schild(const DataType& used_for_size) noexcept {
   //   std::cout << x << "\n";
   const double t = 1.3;
 
-  //   // Evaluate solution
-  //   gr::Solutions::SphKerrSchild solution(mass, spin, center);
+  // Evaluate solution, instantiating a spherical kerrschild and calling
+  // constructor
+  gr::Solutions::SphKerrSchild solution(mass, spin, center);
 
   //     const auto vars = solution.variables(
   //       x, t, typename gr::Solutions::SphKerrSchild::tags<DataType,
