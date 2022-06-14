@@ -156,13 +156,15 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
     template <typename DataType, typename Frame = ::Frame::Inertial>
     using deriv_H = ::Tags::TempI<27, 4, Frame, DataType>;
     template <typename DataType, typename Frame = ::Frame::Inertial>
-    using deriv_l = ::Tags::Tempij<28, 4, Frame, DataType>;
+    using ks_deriv_l = ::Tags::Tempij<28, 4, Frame, DataType>;
+    template <typename DataType, typename Frame = ::Frame::Inertial>
+    using sks_deriv_l = ::Tags::Tempij<29, 4, Frame, DataType>;
     template <typename DataType>
-    using lapse_squared = ::Tags::TempScalar<29, DataType>;
+    using lapse_squared = ::Tags::TempScalar<30, DataType>;
     template <typename DataType>
-    using deriv_lapse_multiplier = ::Tags::TempScalar<30, DataType>;
+    using deriv_lapse_multiplier = ::Tags::TempScalar<31, DataType>;
     template <typename DataType>
-    using shift_multiplier = ::Tags::TempScalar<31, DataType>;
+    using shift_multiplier = ::Tags::TempScalar<32, DataType>;
   };
 
   template <typename DataType, typename Frame = ::Frame::Inertial>
@@ -191,7 +193,8 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
       internal_tags::sph_kerr_schild_l_lower<DataType, Frame>,
       internal_tags::sph_kerr_schild_l_upper<DataType, Frame>,
       internal_tags::deriv_H<DataType, Frame>,
-      internal_tags::deriv_l<DataType, Frame>,
+      internal_tags::ks_deriv_l<DataType, Frame>,
+      internal_tags::sks_deriv_l<DataType, Frame>,
       internal_tags::lapse_squared<DataType>, gr::Tags::Lapse<DataType>,
       internal_tags::deriv_lapse_multiplier<DataType>,
       internal_tags::shift_multiplier<DataType>,
@@ -328,9 +331,13 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
                     gsl::not_null<CachedBuffer*> cache,
                     internal_tags::deriv_H<DataType, Frame> /*meta*/) const;
 
-    void operator()(gsl::not_null<tnsr::ij<DataType, 4, Frame>*> deriv_l,
+    void operator()(gsl::not_null<tnsr::ij<DataType, 4, Frame>*> ks_deriv_l,
                     gsl::not_null<CachedBuffer*> cache,
-                    internal_tags::deriv_l<DataType, Frame> /*meta*/) const;
+                    internal_tags::ks_deriv_l<DataType, Frame> /*meta*/) const;
+
+    void operator()(gsl::not_null<tnsr::ij<DataType, 4, Frame>*> sks_deriv_l,
+                    gsl::not_null<CachedBuffer*> cache,
+                    internal_tags::sks_deriv_l<DataType, Frame> /*meta*/) const;
 
     void operator()(gsl::not_null<Scalar<DataType>*> lapse_squared,
                     gsl::not_null<CachedBuffer*> cache,
