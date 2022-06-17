@@ -1,7 +1,7 @@
 // Distributed under the MIT License.
 // See LICENSE.txt for details.
 
-#include "PointwiseFunctions/AnalyticSolutions/GeneralRelativity/SphKerrSchild.hpp"
+#include "PointwiseFunctions/AnalyticSolutions/GeneralRelativity/SphericalKerrSchild.hpp"
 
 #include <cmath>  // IWYU pragma: keep
 #include <numeric>
@@ -26,16 +26,16 @@
 
 namespace gr::Solutions {
 
-SphKerrSchild::SphKerrSchild(const double mass,
-                             SphKerrSchild::Spin::type dimensionless_spin,
-                             SphKerrSchild::Center::type center,
-                             const Options::Context& context)
+SphericalKerrSchild::SphericalKerrSchild(
+    const double mass, SphericalKerrSchild::Spin::type dimensionless_spin,
+    SphericalKerrSchild::Center::type center, const Options::Context& context)
 
     : mass_(mass),
       // clang-tidy: do not std::move trivial types.
-      dimensionless_spin_(std::move(dimensionless_spin)),
+      dimensionless_spin_(std::move(
+          dimensionless_spin)),  // NOLINTNEXTLINE(performance-move-const-arg)
       // clang-tidy: do not std::move trivial types.
-      center_(std::move(center))
+      center_(std::move(center))  // NOLINTNEXTLINE(performance-move-const-arg)
 {
   const double spin_magnitude = magnitude(dimensionless_spin_);
   if (spin_magnitude > 1.) {
@@ -48,21 +48,22 @@ SphKerrSchild::SphKerrSchild(const double mass,
   }
 }
 
-SphKerrSchild::SphKerrSchild(CkMigrateMessage* /*unused*/) {}
+SphericalKerrSchild::SphericalKerrSchild(CkMigrateMessage* /*unused*/) {}
 
-void SphKerrSchild::pup(PUP::er& p) {
+void SphericalKerrSchild::pup(PUP::er& p) {
   p | mass_;
   p | dimensionless_spin_;
   p | center_;
 }
 
 template <typename DataType, typename Frame>
-SphKerrSchild::IntermediateComputer<DataType, Frame>::IntermediateComputer(
-    const SphKerrSchild& solution, const tnsr::I<DataType, 3, Frame>& x)
+SphericalKerrSchild::IntermediateComputer<
+    DataType, Frame>::IntermediateComputer(const SphericalKerrSchild& solution,
+                                           const tnsr::I<DataType, 3, Frame>& x)
     : solution_(solution), x_(x) {}
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::I<DataType, 3, Frame>*> x_minus_center,
     const gsl::not_null<CachedBuffer*> /*cache*/,
     internal_tags::x_minus_center<DataType, Frame> /*meta*/) const {
@@ -73,7 +74,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<Scalar<DataType>*> r_squared,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::r_squared<DataType> /*meta*/) const {
@@ -86,7 +87,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<Scalar<DataType>*> r,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::r<DataType> /*meta*/) const {
@@ -97,7 +98,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<Scalar<DataType>*> rho,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::rho<DataType> /*meta*/) const {
@@ -111,7 +112,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> helper_matrix_F,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::helper_matrix_F<DataType, Frame> /*meta*/) const {
@@ -135,7 +136,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> transformation_matrix_P,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::transformation_matrix_P<DataType, Frame> /*meta*/) const {
@@ -155,7 +156,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> jacobian,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::jacobian<DataType, Frame> /*meta*/) const {
@@ -178,7 +179,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> helper_matrix_D,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::helper_matrix_D<DataType, Frame> /*meta*/) const {
@@ -202,7 +203,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> helper_matrix_C,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::helper_matrix_C<DataType, Frame> /*meta*/) const {
@@ -220,7 +221,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::iJk<DataType, 3, Frame>*> deriv_jacobian,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::deriv_jacobian<DataType, Frame> /*meta*/) const {
@@ -254,7 +255,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> transformation_matrix_Q,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::transformation_matrix_Q<DataType, Frame> /*meta*/) const {
@@ -274,7 +275,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> helper_matrix_G1,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::helper_matrix_G1<DataType, Frame> /*meta*/) const {
@@ -298,7 +299,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<Scalar<DataType>*> a_dot_x,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::a_dot_x<DataType> /*meta*/) const {
@@ -312,7 +313,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<Scalar<DataType>*> s_number,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::s_number<DataType> /*meta*/) const {
@@ -325,7 +326,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> helper_matrix_G2,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::helper_matrix_G2<DataType, Frame> /*meta*/) const {
@@ -345,7 +346,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::I<DataType, 3, Frame>*> G1_dot_x,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::G1_dot_x<DataType, Frame> /*meta*/) const {
@@ -363,7 +364,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::i<DataType, 3, Frame>*> G2_dot_x,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::G2_dot_x<DataType, Frame> /*meta*/) const {
@@ -381,7 +382,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> inv_jacobian,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::inv_jacobian<DataType, Frame> /*meta*/) const {
@@ -401,7 +402,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> helper_matrix_E1,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::helper_matrix_E1<DataType, Frame> /*meta*/) const {
@@ -427,7 +428,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::Ij<DataType, 3, Frame>*> helper_matrix_E2,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::helper_matrix_E2<DataType, Frame> /*meta*/) const {
@@ -458,7 +459,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::iJk<DataType, 3, Frame>*> deriv_inv_jacobian,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::deriv_inv_jacobian<DataType, Frame> /*meta*/) const {
@@ -508,7 +509,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<Scalar<DataType>*> H,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::H<DataType> /*meta*/) const {
@@ -520,7 +521,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::I<DataType, 3, Frame>*> kerr_schild_x,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::kerr_schild_x<DataType, Frame> /*meta*/) const {
@@ -540,7 +541,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::I<DataType, 3, Frame>*> a_cross_x,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::a_cross_x<DataType, Frame> /*meta*/) const {
@@ -559,7 +560,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::I<DataType, 3, Frame>*> kerr_schild_l,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::kerr_schild_l<DataType, Frame> /*meta*/) const {
@@ -583,7 +584,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::i<DataType, 4, Frame>*> l_lower,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::l_lower<DataType, Frame> /*meta*/) const {
@@ -603,7 +604,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::I<DataType, 4, Frame>*> l_upper,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::l_upper<DataType, Frame> /*meta*/) const {
@@ -623,7 +624,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::I<DataType, 3, Frame>*> deriv_r,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::deriv_r<DataType, Frame> /*meta*/) const {
@@ -648,7 +649,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::I<DataType, 4, Frame>*> deriv_H,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::deriv_H<DataType, Frame> /*meta*/) const {
@@ -685,7 +686,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::ij<DataType, 4, Frame>*> kerr_schild_deriv_l,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::kerr_schild_deriv_l<DataType, Frame> /*meta*/) const {
@@ -732,7 +733,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::ij<DataType, 4, Frame>*> deriv_l,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::deriv_l<DataType, Frame> /*meta*/) const {
@@ -765,7 +766,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<Scalar<DataType>*> lapse_squared,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::lapse_squared<DataType> /*meta*/) const {
@@ -777,7 +778,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<Scalar<DataType>*> lapse,
     const gsl::not_null<CachedBuffer*> cache,
     gr::Tags::Lapse<DataType> /*meta*/) const {
@@ -788,7 +789,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<Scalar<DataType>*> deriv_lapse_multiplier,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::deriv_lapse_multiplier<DataType> /*meta*/) const {
@@ -801,7 +802,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<Scalar<DataType>*> shift_multiplier,
     const gsl::not_null<CachedBuffer*> cache,
     internal_tags::shift_multiplier<DataType> /*meta*/) const {
@@ -813,7 +814,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::I<DataType, 3, Frame>*> shift,
     const gsl::not_null<CachedBuffer*> cache,
     gr::Tags::Shift<3, Frame, DataType> /*meta*/) const {
@@ -828,7 +829,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::iJ<DataType, 3, Frame>*> deriv_shift,
     const gsl::not_null<CachedBuffer*> cache,
     DerivShift<DataType, Frame> /*meta*/) const {
@@ -851,8 +852,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   for (int i = 0; i < 3; ++i) {
     for (int k = 0; k < 3; ++k) {
       deriv_shift->get(k, i) =
-          4. * H * l_upper.get(0) * l_upper.get(i + 1) *
-              square(lapse_squared) *
+          4. * H * l_upper.get(0) * l_upper.get(i + 1) * square(lapse_squared) *
               (square(l_upper.get(0)) * deriv_H.get(k + 1) +
                2. * H * l_upper.get(0) * deriv_l.get(k + 1, 0)) -
           2. * lapse_squared *
@@ -875,7 +875,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::ii<DataType, 3, Frame>*> spatial_metric,
     const gsl::not_null<CachedBuffer*> cache,
     gr::Tags::SpatialMetric<3, Frame, DataType> /*meta*/) const {
@@ -897,7 +897,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::ijj<DataType, 3, Frame>*> deriv_spatial_metric,
     const gsl::not_null<CachedBuffer*> cache,
     DerivSpatialMetric<DataType, Frame> /*meta*/) const {
@@ -932,7 +932,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 }
 
 template <typename DataType, typename Frame>
-void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
+void SphericalKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     const gsl::not_null<tnsr::ii<DataType, 3, Frame>*> dt_spatial_metric,
     const gsl::not_null<CachedBuffer*> /*cache*/,
     ::Tags::dt<gr::Tags::SpatialMetric<3, Frame, DataType>> /*meta*/) const {
@@ -941,7 +941,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 
 template <typename DataType, typename Frame>
 tnsr::i<DataType, 3, Frame>
-SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
+SphericalKerrSchild::IntermediateVars<DataType, Frame>::get_var(
     const IntermediateComputer<DataType, Frame>& computer,
     DerivLapse<DataType, Frame> /*meta*/) {
   tnsr::i<DataType, 3, Frame> result{};
@@ -957,7 +957,8 @@ SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
 }
 
 template <typename DataType, typename Frame>
-Scalar<DataType> SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
+Scalar<DataType>
+SphericalKerrSchild::IntermediateVars<DataType, Frame>::get_var(
     const IntermediateComputer<DataType, Frame>& computer,
     ::Tags::dt<gr::Tags::Lapse<DataType>> /*meta*/) {
   const auto& H = get(get_var(computer, internal_tags::H<DataType>{}));
@@ -967,7 +968,7 @@ Scalar<DataType> SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
 
 template <typename DataType, typename Frame>
 tnsr::I<DataType, 3, Frame>
-SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
+SphericalKerrSchild::IntermediateVars<DataType, Frame>::get_var(
     const IntermediateComputer<DataType, Frame>& computer,
     ::Tags::dt<gr::Tags::Shift<3, Frame, DataType>> /*meta*/) {
   const auto& H = get(get_var(computer, internal_tags::H<DataType>()));
@@ -976,7 +977,8 @@ SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
 }
 
 template <typename DataType, typename Frame>
-Scalar<DataType> SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
+Scalar<DataType>
+SphericalKerrSchild::IntermediateVars<DataType, Frame>::get_var(
     const IntermediateComputer<DataType, Frame>& computer,
     gr::Tags::SqrtDetSpatialMetric<DataType> /*meta*/) {
   const auto& jacobian =
@@ -988,7 +990,7 @@ Scalar<DataType> SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
 
 template <typename DataType, typename Frame>
 tnsr::i<DataType, 3, Frame>
-SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
+SphericalKerrSchild::IntermediateVars<DataType, Frame>::get_var(
     const IntermediateComputer<DataType, Frame>& computer,
     gr::Tags::DerivDetSpatialMetric<3, Frame, DataType> /*meta*/) {
   const auto& deriv_H =
@@ -1004,7 +1006,7 @@ SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
 
 template <typename DataType, typename Frame>
 tnsr::II<DataType, 3, Frame>
-SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
+SphericalKerrSchild::IntermediateVars<DataType, Frame>::get_var(
     const IntermediateComputer<DataType, Frame>& computer,
     gr::Tags::InverseSpatialMetric<3, Frame, DataType> /*meta*/) {
   const auto& H = get(get_var(computer, internal_tags::H<DataType>{}));
@@ -1030,7 +1032,7 @@ SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
 
 template <typename DataType, typename Frame>
 tnsr::ii<DataType, 3, Frame>
-SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
+SphericalKerrSchild::IntermediateVars<DataType, Frame>::get_var(
     const IntermediateComputer<DataType, Frame>& computer,
     gr::Tags::ExtrinsicCurvature<3, Frame, DataType> /*meta*/) {
   return gr::extrinsic_curvature(
@@ -1043,22 +1045,26 @@ SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
       get_var(computer, DerivSpatialMetric<DataType, Frame>{}));
 }
 
-bool operator==(const SphKerrSchild& lhs, const SphKerrSchild& rhs) {
+bool operator==(const SphericalKerrSchild& lhs,
+                const SphericalKerrSchild& rhs) {
   return lhs.mass() == rhs.mass() and
          lhs.dimensionless_spin() == rhs.dimensionless_spin() and
          lhs.center() == rhs.center();
 }
 
-bool operator!=(const SphKerrSchild& lhs, const SphKerrSchild& rhs) {
+bool operator!=(const SphericalKerrSchild& lhs,
+                const SphericalKerrSchild& rhs) {
   return not(lhs == rhs);
 }
 
 #define DTYPE(data) BOOST_PP_TUPLE_ELEM(0, data)
 #define FRAME(data) BOOST_PP_TUPLE_ELEM(1, data)
 
-#define INSTANTIATE(_, data)                                                \
-  template class SphKerrSchild::IntermediateVars<DTYPE(data), FRAME(data)>; \
-  template class SphKerrSchild::IntermediateComputer<DTYPE(data), FRAME(data)>;
+#define INSTANTIATE(_, data)                                            \
+  template class SphericalKerrSchild::IntermediateVars<DTYPE(data),     \
+                                                       FRAME(data)>;    \
+  template class SphericalKerrSchild::IntermediateComputer<DTYPE(data), \
+                                                           FRAME(data)>;
 GENERATE_INSTANTIATIONS(INSTANTIATE, (DataVector, double),
                         (::Frame::Inertial, ::Frame::Grid))
 #undef INSTANTIATE

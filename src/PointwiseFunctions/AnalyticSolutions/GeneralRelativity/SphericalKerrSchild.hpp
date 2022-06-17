@@ -35,8 +35,8 @@ class not_null;
 namespace gr {
 namespace Solutions {
 
-class SphKerrSchild : public AnalyticSolution<3_st>,
-                      public MarkAsAnalyticSolution {
+class SphericalKerrSchild : public AnalyticSolution<3_st>,
+                            public MarkAsAnalyticSolution {
  public:
   struct Mass {
     using type = double;
@@ -57,17 +57,18 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
   static constexpr Options::String help{
       "Black hole in SphKerr-Schild coordinates"};
 
-  SphKerrSchild(double mass, Spin::type dimensionless_spin, Center::type center,
-                const Options::Context& context = {});
+  SphericalKerrSchild(double mass, Spin::type dimensionless_spin,
+                      Center::type center,
+                      const Options::Context& context = {});
 
-  explicit SphKerrSchild(CkMigrateMessage* /*unused*/);
+  explicit SphericalKerrSchild(CkMigrateMessage* /*unused*/);
 
-  SphKerrSchild() = default;
-  SphKerrSchild(const SphKerrSchild& /*rhs*/) = default;
-  SphKerrSchild& operator=(const SphKerrSchild& /*rhs*/) = default;
-  SphKerrSchild(SphKerrSchild&& /*rhs*/) = default;
-  SphKerrSchild& operator=(SphKerrSchild&& /*rhs*/) = default;
-  ~SphKerrSchild() = default;
+  SphericalKerrSchild() = default;
+  SphericalKerrSchild(const SphericalKerrSchild& /*rhs*/) = default;
+  SphericalKerrSchild& operator=(const SphericalKerrSchild& /*rhs*/) = default;
+  SphericalKerrSchild(SphericalKerrSchild&& /*rhs*/) = default;
+  SphericalKerrSchild& operator=(SphericalKerrSchild&& /*rhs*/) = default;
+  ~SphericalKerrSchild() = default;
 
   template <typename DataType, typename Frame, typename... Tags>
   tuples::TaggedTuple<Tags...> variables(
@@ -210,9 +211,9 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
   template <typename DataType, typename Frame = ::Frame::Inertial>
   class IntermediateComputer {
    public:
-    using CachedBuffer = SphKerrSchild::CachedBuffer<DataType, Frame>;
+    using CachedBuffer = SphericalKerrSchild::CachedBuffer<DataType, Frame>;
 
-    IntermediateComputer(const SphKerrSchild& solution,
+    IntermediateComputer(const SphericalKerrSchild& solution,
                          const tnsr::I<DataType, 3, Frame>& x);
 
     void operator()(
@@ -395,7 +396,7 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
         ::Tags::dt<gr::Tags::SpatialMetric<3, Frame, DataType>> /*meta*/) const;
 
    private:
-    const SphKerrSchild& solution_;
+    const SphericalKerrSchild& solution_;
     const tnsr::I<DataType, 3, Frame>& x_;
     // Here null_vector_0 is simply -1, but if you have a boosted solution,
     // then null_vector_0 can be something different, so we leave it coded
@@ -406,7 +407,7 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
   template <typename DataType, typename Frame = ::Frame::Inertial>
   class IntermediateVars : public CachedBuffer<DataType, Frame> {
    public:
-    using CachedBuffer = SphKerrSchild::CachedBuffer<DataType, Frame>;
+    using CachedBuffer = SphericalKerrSchild::CachedBuffer<DataType, Frame>;
     using CachedBuffer::CachedBuffer;
     using CachedBuffer::get_var;
 
@@ -453,9 +454,9 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
       make_array<volume_dim>(std::numeric_limits<double>::signaling_NaN());
 };
 
-bool operator==(const SphKerrSchild& lhs, const SphKerrSchild& rhs);
+bool operator==(const SphericalKerrSchild& lhs, const SphericalKerrSchild& rhs);
 
-bool operator!=(const SphKerrSchild& lhs, const SphKerrSchild& rhs);
+bool operator!=(const SphericalKerrSchild& lhs, const SphericalKerrSchild& rhs);
 
 }  // namespace Solutions
 }  // namespace gr
