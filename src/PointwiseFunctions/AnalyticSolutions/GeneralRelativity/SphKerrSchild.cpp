@@ -33,20 +33,22 @@ SphKerrSchild::SphKerrSchild(const double mass,
 
     : mass_(mass),
       // clang-tidy: do not std::move trivial types.
-      dimensionless_spin_(std::move(dimensionless_spin)),  // NOLINT
+      dimensionless_spin_(std::move(dimensionless_spin)),
       // clang-tidy: do not std::move trivial types.
-      center_(std::move(center))  // NOLINT
+      center_(std::move(center))
 {
   const double spin_magnitude = magnitude(dimensionless_spin_);
-  if (spin_magnitude > 1.0) {
+  if (spin_magnitude > 1.) {
     PARSE_ERROR(context, "Spin magnitude must be < 1. Given spin: "
                              << dimensionless_spin_ << " with magnitude "
                              << spin_magnitude);
   }
-  if (mass_ < 0.0) {
-    PARSE_ERROR(context, "Mass must be non-negative. Given mass: " << mass_);
+  if (mass_ <= 0.) {
+    PARSE_ERROR(context, "Mass must be > 0. Given mass: " << mass_);
   }
 }
+
+SphKerrSchild::SphKerrSchild(CkMigrateMessage* /*unused*/) {}
 
 void SphKerrSchild::pup(PUP::er& p) {
   p | mass_;
@@ -121,7 +123,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = 0; j < 3; ++j) {
-      helper_matrix_F->get(i, j) = -1. / rho / cube(r);
+      helper_matrix_F->get(i, j) = -1. / (rho * cube(r));
       if (i == j) {  // Kronecker delta
         helper_matrix_F->get(i, j) *=
             (a_squared - gsl::at(spin_a, i) * gsl::at(spin_a, j));
@@ -144,7 +146,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = 0; j < 3; ++j) {
       transformation_matrix_P->get(i, j) =
-          -(gsl::at(spin_a, i) * gsl::at(spin_a, j)) / (rho + r) / r;
+          -(gsl::at(spin_a, i) * gsl::at(spin_a, j)) / (r * (rho + r));
       if (i == j) {  // Kronecker delta
         transformation_matrix_P->get(i, j) += rho / r;
       }
@@ -188,7 +190,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = 0; j < 3; ++j) {
-      helper_matrix_D->get(i, j) = 1. / cube(rho) / r;
+      helper_matrix_D->get(i, j) = 1. / (r * cube(rho));
       if (i == j) {  // Kronecker delta
         helper_matrix_D->get(i, j) *=
             (a_squared - gsl::at(spin_a, i) * gsl::at(spin_a, j));
@@ -284,7 +286,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 
   for (size_t i = 0; i < 3; ++i) {
     for (size_t m = 0; m < 3; ++m) {
-      helper_matrix_G1->get(i, m) = 1. / square(rho) / r;
+      helper_matrix_G1->get(i, m) = 1. / (r * square(rho));
       if (i == m) {  // Kronecker delta
         helper_matrix_G1->get(i, m) *=
             (a_squared - gsl::at(spin_a, i) * gsl::at(spin_a, m));
@@ -413,7 +415,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   for (size_t i = 0; i < 3; ++i) {
     for (size_t m = 0; m < 3; ++m) {
       helper_matrix_E1->get(i, m) =
-          -1. / square(rho) * (1. / r_squared + 2 / square(rho));
+          -(square(rho) + 2. * r_squared) / (r_squared * pow<4>(rho));
       if (i == m) {  // Kronecker delta
         helper_matrix_E1->get(i, m) *=
             (a_squared - gsl::at(spin_a, i) * gsl::at(spin_a, m));
@@ -490,14 +492,15 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
             helper_matrix_D.get(i, j) * x_minus_center.get(k) +
             helper_matrix_G1.get(i, k) * G2_dot_x.get(j) +
             helper_matrix_G2.get(k, j) * G1_dot_x.get(i) -
-            2. * a_dot_x * gsl::at(spin_a, k) / s_number / square(r) *
-                G1_dot_x.get(i) * G2_dot_x.get(j);
+            2. * a_dot_x * gsl::at(spin_a, k) * G1_dot_x.get(i) *
+                G2_dot_x.get(j) / (s_number * square(r));
         for (size_t m = 0; m < 3; ++m) {
           deriv_inv_jacobian->get(k, j, i) +=
-              helper_matrix_E1.get(i, m) * x_minus_center.get(m) *
-                  G2_dot_x.get(j) * x_minus_center.get(k) / r +
-              G1_dot_x.get(i) * x_minus_center.get(k) * x_minus_center.get(m) *
-                  helper_matrix_E2.get(m, j) / r;
+              (helper_matrix_E1.get(i, m) * x_minus_center.get(m) *
+                   G2_dot_x.get(j) * x_minus_center.get(k) +
+               G1_dot_x.get(i) * x_minus_center.get(k) * x_minus_center.get(m) *
+                   helper_matrix_E2.get(m, j)) /
+              r;
         }
       }
     }
@@ -513,7 +516,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   const auto& a_dot_x =
       get(cache->get_var(*this, internal_tags::a_dot_x<DataType>{}));
 
-  get(*H) = solution_.mass() * cube(r) / (pow(r, 4) + square(a_dot_x));
+  get(*H) = solution_.mass() * cube(r) / (pow<4>(r) + square(a_dot_x));
 }
 
 template <typename DataType, typename Frame>
@@ -547,7 +550,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
 
   // temp_spin used to convert the spin from type array to type tnsr
   auto temp_spin = make_with_value<tnsr::I<DataType, 3, Frame>>(
-      get_size(get_element(kerr_schild_x, 0)), 0.0);
+      get_size(get_element(kerr_schild_x, 0)), 0.);
 
   for (size_t i = 0; i < 3; ++i) {
     temp_spin[i] = gsl::at(spin_a, i);
@@ -659,7 +662,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   const auto& deriv_r =
       cache->get_var(*this, internal_tags::deriv_r<DataType, Frame>{});
 
-  const auto H_denom = 1. / (pow(r, 4) + square(a_dot_x));
+  const auto H_denom = 1. / (pow<4>(r) + square(a_dot_x));
   const auto factor = 3. / r - 4. * cube(r) * H_denom;
 
   deriv_H->get(0) = 0.;  // set time component to 0
@@ -669,6 +672,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
         (factor * deriv_r.get(i) - 2. * H_denom * a_dot_x * gsl::at(spin_a, i));
   }
 
+  // Explicitly copy because we modify components in loop below
   const auto deriv_H_x = deriv_H->get(1);
   const auto deriv_H_y = deriv_H->get(2);
   const auto deriv_H_z = deriv_H->get(3);
@@ -769,7 +773,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   const auto& l_upper =
       cache->get_var(*this, internal_tags::l_upper<DataType, Frame>{});
 
-  get(*lapse_squared) = 1.0 / (1.0 + 2.0 * square(l_upper.get(0)) * H);
+  get(*lapse_squared) = 1. / (1. + 2. * square(l_upper.get(0)) * H);
 }
 
 template <typename DataType, typename Frame>
@@ -805,7 +809,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   const auto& lapse_squared =
       get(cache->get_var(*this, internal_tags::lapse_squared<DataType>{}));
 
-  get(*shift_multiplier) = -2.0 * null_vector_0_ * H * lapse_squared;
+  get(*shift_multiplier) = -2. * null_vector_0_ * H * lapse_squared;
 }
 
 template <typename DataType, typename Frame>
@@ -847,17 +851,17 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   for (int i = 0; i < 3; ++i) {
     for (int k = 0; k < 3; ++k) {
       deriv_shift->get(k, i) =
-          4.0 * H * l_upper.get(0) * l_upper.get(i + 1) *
+          4. * H * l_upper.get(0) * l_upper.get(i + 1) *
               square(lapse_squared) *
               (square(l_upper.get(0)) * deriv_H.get(k + 1) +
-               2.0 * H * l_upper.get(0) * deriv_l.get(k + 1, 0)) -
-          2.0 * lapse_squared *
+               2. * H * l_upper.get(0) * deriv_l.get(k + 1, 0)) -
+          2. * lapse_squared *
               (l_upper.get(0) * l_upper.get(i + 1) * deriv_H.get(k + 1) +
                H * l_upper.get(i + 1) * deriv_l.get(k + 1, 0));
       for (int j = 0; j < 3; ++j) {
         for (int m = 0; m < 3; ++m) {
           deriv_shift->get(k, i) +=
-              -2.0 * lapse_squared * H * l_upper.get(0) *
+              -2. * lapse_squared * H * l_upper.get(0) *
               (inv_jacobian.get(j, i) * inv_jacobian.get(j, m) *
                    deriv_l.get(k + 1, m + 1) +
                inv_jacobian.get(j, i) * l_lower.get(m + 1) *
@@ -884,7 +888,7 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = i; j < 3; ++j) {  // Symmetry
       spatial_metric->get(i, j) =
-          2.0 * H * l_lower.get(i + 1) * l_lower.get(j + 1);
+          2. * H * l_lower.get(i + 1) * l_lower.get(j + 1);
       for (size_t m = 0; m < 3; ++m) {
         spatial_metric->get(i, j) += jacobian.get(i, m) * jacobian.get(j, m);
       }
@@ -913,8 +917,8 @@ void SphKerrSchild::IntermediateComputer<DataType, Frame>::operator()(
     for (int i = 0; i < 3; ++i) {
       for (int j = i; j < 3; ++j) {  // Symmetry
         deriv_spatial_metric->get(k, i, j) =
-            2.0 * l_lower.get(i + 1) * l_lower.get(j + 1) * deriv_H.get(k + 1) +
-            2.0 * H *
+            2. * l_lower.get(i + 1) * l_lower.get(j + 1) * deriv_H.get(k + 1) +
+            2. * H *
                 (l_lower.get(i + 1) * deriv_l.get(k + 1, j + 1) +
                  l_lower.get(j + 1) * deriv_l.get(k + 1, i + 1));
         for (int m = 0; m < 3; ++m) {
@@ -993,7 +997,7 @@ SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
   auto result =
       make_with_value<tnsr::i<DataType, 3, Frame>>(get<0>(deriv_H), 0.);
   for (size_t i = 0; i < 3; ++i) {
-    result.get(i) = 2.0 * square(null_vector_0_) * deriv_H.get(i + 1);
+    result.get(i) = 2. * square(null_vector_0_) * deriv_H.get(i + 1);
   }
   return result;
 }
@@ -1015,7 +1019,7 @@ SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = i; j < 3; ++j) {  // Symmetry
       result.get(i, j) -=
-          2.0 * H * lapse_squared * l_upper.get(i + 1) * l_upper.get(j + 1);
+          2. * H * lapse_squared * l_upper.get(i + 1) * l_upper.get(j + 1);
       for (size_t m = 0; m < 3; ++m) {
         result.get(i, j) += inv_jacobian.get(m, i) * inv_jacobian.get(m, j);
       }
@@ -1037,6 +1041,16 @@ SphKerrSchild::IntermediateVars<DataType, Frame>::get_var(
       get_var(computer,
               ::Tags::dt<gr::Tags::SpatialMetric<3, Frame, DataType>>{}),
       get_var(computer, DerivSpatialMetric<DataType, Frame>{}));
+}
+
+bool operator==(const SphKerrSchild& lhs, const SphKerrSchild& rhs) {
+  return lhs.mass() == rhs.mass() and
+         lhs.dimensionless_spin() == rhs.dimensionless_spin() and
+         lhs.center() == rhs.center();
+}
+
+bool operator!=(const SphKerrSchild& lhs, const SphKerrSchild& rhs) {
+  return not(lhs == rhs);
 }
 
 #define DTYPE(data) BOOST_PP_TUPLE_ELEM(0, data)

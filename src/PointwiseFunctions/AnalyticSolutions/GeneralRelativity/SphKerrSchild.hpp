@@ -60,7 +60,7 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
   SphKerrSchild(double mass, Spin::type dimensionless_spin, Center::type center,
                 const Options::Context& context = {});
 
-  explicit SphKerrSchild(CkMigrateMessage* /*unused*/) {}
+  explicit SphKerrSchild(CkMigrateMessage* /*unused*/);
 
   SphKerrSchild() = default;
   SphKerrSchild(const SphKerrSchild& /*rhs*/) = default;
@@ -453,16 +453,9 @@ class SphKerrSchild : public AnalyticSolution<3_st>,
       make_array<volume_dim>(std::numeric_limits<double>::signaling_NaN());
 };
 
-SPECTRE_ALWAYS_INLINE bool operator==(const SphKerrSchild& lhs,
-                                      const SphKerrSchild& rhs) {
-  return lhs.mass() == rhs.mass() and
-         lhs.dimensionless_spin() == rhs.dimensionless_spin() and
-         lhs.center() == rhs.center();
-}
+bool operator==(const SphKerrSchild& lhs, const SphKerrSchild& rhs);
 
-SPECTRE_ALWAYS_INLINE bool operator!=(const SphKerrSchild& lhs,
-                                      const SphKerrSchild& rhs) {
-  return not(lhs == rhs);
-}
+bool operator!=(const SphKerrSchild& lhs, const SphKerrSchild& rhs);
+
 }  // namespace Solutions
 }  // namespace gr
