@@ -13,13 +13,23 @@
 #include "IO/H5/File.hpp"
 #include "IO/H5/VolumeData.hpp"
 #include "NumericalAlgorithms/Spectral/Spectral.hpp"
+#include "Parallel/Printf.hpp"
 
 #include <iostream>
 #include <typeinfo>
+#include <variant>
 
 // Charm looks for this function but since we build without a main function or
 // main module we just have it be empty
 extern "C" void CkRegisterMainModule(void) {}
+
+size_t data_size(std::variant<DataVector, std::vector<float>> data) {
+  if (data.index() == 0) {
+    return std::get<DataVector>(data).size();
+  } else {
+    return std::get<std::vector<float>>(data).size();
+  }
+}
 
 void combine_h5(const std::string& file_prefix,
                 const std::string& subfile_prefix,
@@ -46,6 +56,29 @@ void combine_h5(const std::string& file_prefix,
     for (size_t j = 0; j < read_tensor_components.size(); ++j) {
       tensor_component.push_back(volume_file.get_tensor_component(
           read_observation_ids[i], read_tensor_components[j]));
+    }
+    std::vector<std::vector<TensorComponent>> modified_tensor_component;
+    std::cout << tensor_component[0] << "\n";
+    // for (size_t j = 0; j < tensor_component.size(); ++j) {
+    //   std::string component_name = tensor_component[j].name;
+    //   auto data = tensor_component[j].data;
+    //   auto sub_vector_length = data_size(data)/read_extents.size();
+    //   std::vector<TensorComponent> sub_vector;
+    //   for (size_t k = 0; k < read_extents.size(); ++k) {
+
+    //   }
+    // }
+    for (size_t j = 0; j < read_extents.size(); ++j) {
+      std::vector<TensorComponent> sub_vector;
+      for (size_t k = 0; k < tensor_component.size(); ++k) {
+        std::string component_name = tensor_component[k].name;
+        auto data = tensor_component[k].data;
+        auto sub_vector_length = data_size(data) / read_extents.size();
+        for (size_t l = 0; l < sub_vector_length; ++l) {
+          sub_vector.emplace_back(data.get(
+              l))  // Need a proper helper function depending on type in variant
+        }
+      }
     }
     auto read_bases = volume_file.get_bases(read_observation_ids[i]);
     auto read_quadratures =
