@@ -31,6 +31,33 @@ size_t data_size(std::variant<DataVector, std::vector<float>> data) {
   }
 }
 
+// float data_value(std::variant<DataVector, std::vector<float>> data, size_t
+// index) {
+//   if (data.index() == 0) {
+//     return std::get<DataVector>(data)[index];
+//   } else {
+//     return std::get<std::vector<float>>(data)[index];
+//   }
+// }
+
+TensorComponent group_tensor_component(
+    std::string name, std::variant<DataVector, std::vector<float>> data,
+    size_t index, size_t group_length) {
+  if (data.index() == 0) {
+    DataVector group(group_length);
+    for (size_t i = 0; i < group_length; ++i) {
+      group[i] = std::get<DataVector>(data)[i + index];
+    }
+    return {name, group};
+  } else {
+    std::vector<float> group;
+    for (size_t i = 0; i < group_length; ++i) {
+      group.push_back(std::get<std::vector<float>>(data)[i + index]);
+    }
+    return {name, group};
+  }
+}
+
 void combine_h5(const std::string& file_prefix,
                 const std::string& subfile_prefix,
                 const std::string& output_prefix) {
@@ -57,8 +84,13 @@ void combine_h5(const std::string& file_prefix,
       tensor_component.push_back(volume_file.get_tensor_component(
           read_observation_ids[i], read_tensor_components[j]));
     }
+    auto read_bases = volume_file.get_bases(read_observation_ids[i]);
+    auto read_quadratures =
+        volume_file.get_quadratures(read_observation_ids[i]);
+    auto read_extents = volume_file.get_extents(read_observation_ids[i]);
+    auto read_grid_names = volume_file.get_grid_names(read_observation_ids[i]);
+
     std::vector<std::vector<TensorComponent>> modified_tensor_component;
-    std::cout << tensor_component[0] << "\n";
     // for (size_t j = 0; j < tensor_component.size(); ++j) {
     //   std::string component_name = tensor_component[j].name;
     //   auto data = tensor_component[j].data;
@@ -74,17 +106,11 @@ void combine_h5(const std::string& file_prefix,
         std::string component_name = tensor_component[k].name;
         auto data = tensor_component[k].data;
         auto sub_vector_length = data_size(data) / read_extents.size();
-        for (size_t l = 0; l < sub_vector_length; ++l) {
-          sub_vector.emplace_back(data.get(
-              l))  // Need a proper helper function depending on type in variant
-        }
+        sub_vector.push_back(
+            group_tensor_component(component_name, data, j, sub_vector_length));
       }
+      modified_tensor_component.push_back(sub_vector);
     }
-    auto read_bases = volume_file.get_bases(read_observation_ids[i]);
-    auto read_quadratures =
-        volume_file.get_quadratures(read_observation_ids[i]);
-    auto read_extents = volume_file.get_extents(read_observation_ids[i]);
-    auto read_grid_names = volume_file.get_grid_names(read_observation_ids[i]);
 
     initial_file.close_current_object();
 
@@ -108,14 +134,11 @@ void combine_h5(const std::string& file_prefix,
       vector_of_quadrature.push_back(temp_quad);
     }
 
-    std::cout << read_bases[0].size() << "\n";
-    std::cout << read_quadratures.size() << "\n";
-
     std::vector<ElementVolumeData> element_volume_data_vector;
 
     for (size_t j = 0; j < read_extents.size(); ++j) {
       element_volume_data_vector.push_back(
-          {read_extents[j], tensor_component, vector_of_bases[j],
+          {read_extents[j], modified_tensor_component[j], vector_of_bases[j],
            vector_of_quadrature[j], read_grid_names[j]});
     }
 
