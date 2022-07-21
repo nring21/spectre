@@ -11,39 +11,39 @@
 #include "DataStructures/Tensor/TensorData.hpp"
 #include "IO/H5/AccessType.hpp"
 #include "IO/H5/File.hpp"
+#include "IO/H5/SourceArchive.hpp"
 #include "IO/H5/VolumeData.hpp"
 #include "NumericalAlgorithms/Spectral/Spectral.hpp"
 #include "Parallel/Printf.hpp"
 #include "Utilities/FileSystem.hpp"
 
+#include <iostream>
+
 // Charm looks for this function but since we build without a main function or
 // main module we just have it be empty
 extern "C" void CkRegisterMainModule(void) {}
 
-size_t data_size(std::variant<DataVector, std::vector<float>> data) {
-  if (data.index() == 0) {
-    return std::get<DataVector>(data).size();
-  } else {
-    return std::get<std::vector<float>>(data).size();
-  }
-}
+// Compares source archives of each file against the 0th volume file. Returns
+// true if each source archive matches the 0th one
+bool check_src_files(const std::vector<std::string> file_names) {
+  h5::H5File<h5::AccessType::ReadWrite> initial_file(file_names[0], true);
+  auto& src_archive_object_initial =
+      initial_file.get<h5::SourceArchive>("/src");
+  const std::vector<char>& src_tar_initial =
+      src_archive_object_initial.get_archive();
+  for (size_t i = 1; i < file_names.size(); ++i) {
+    h5::H5File<h5::AccessType::ReadWrite> comparison_file(file_names[i], true);
+    auto& src_archive_object_compare =
+        comparison_file.get<h5::SourceArchive>("/src");
+    const std::vector<char>& src_tar_compare =
+        src_archive_object_compare.get_archive();
 
-TensorComponent group_tensor_component(
-    std::string name, std::variant<DataVector, std::vector<float>> data,
-    size_t index, size_t group_length) {
-  if (data.index() == 0) {
-    DataVector group(group_length);
-    for (size_t i = 0; i < group_length; ++i) {
-      group[i] = std::get<DataVector>(data)[i + index];
+    if (src_tar_initial != src_tar_compare) {
+      return false;
     }
-    return {name, group};
-  } else {
-    std::vector<float> group;
-    for (size_t i = 0; i < group_length; ++i) {
-      group.push_back(std::get<std::vector<float>>(data)[i + index]);
-    }
-    return {name, group};
   }
+  return true;  // Ask if should have a static_assert() to check that there
+                // exists more than one file to combine in the directory
 }
 
 void combine_h5(const std::string& file_prefix, const std::string& subfile_name,
@@ -51,10 +51,27 @@ void combine_h5(const std::string& file_prefix, const std::string& subfile_name,
   // Parses for and stores all input files to be looped over
   std::vector<std::string> file_names = file_system::glob(file_prefix + "*.h5");
 
+  // Checks that volume data was generated with identical versions of SpECTRE
+  if (check_src_files(file_names) == false) {
+    ERROR(
+        "One or more of your files were found to have differing src.tar.gz "
+        "files, meaning that they may be from differing versions of SpECTRE.");
+  }
+
+  // THIS IS FOR SAVING src.tar.gz INFO
+  // h5::H5File<h5::AccessType::ReadWrite> initial_file(file_names[0], true);
+  // auto& src_archive_object_initial =
+  //     initial_file.get<h5::SourceArchive>("/src");
+  // const std::vector<char>& src_tar_initial =
+  //     src_archive_object_initial.get_archive();
+  // initial_file.close_current_object();
+
   // Instantiates the output file and the .vol subfile to be filled with the
   // combined data later
   h5::H5File<h5::AccessType::ReadWrite> new_file(output + "0.h5", true);
   new_file.insert<h5::VolumeData>("/" + subfile_name + ".vol");
+  // new_file_new_file.get<h5::SourceArchive>("/src"); // THIS IS FOR SAVING
+  // src.tar.gz INFO
   new_file.close_current_object();
 
   // std::map to store the sorted volume data
@@ -65,23 +82,24 @@ void combine_h5(const std::string& file_prefix, const std::string& subfile_name,
   // Opens the original files, sorts the volume data, and stores it in the
   // std::map
   for (size_t i = 0; i < file_names.size(); ++i) {
-    h5::H5File<h5::AccessType::ReadWrite> initial_file(
+    h5::H5File<h5::AccessType::ReadWrite> original_file(
         file_prefix + std::to_string(i) + ".h5", true);
 
-    auto& volume_file = initial_file.get<h5::VolumeData>("/" + subfile_name);
+    auto& original_volume_file =
+        original_file.get<h5::VolumeData>("/" + subfile_name);
 
-    auto sorted_volume_data = volume_file.get_data_by_element(
+    auto sorted_volume_data = original_volume_file.get_data_by_element(
         std::nullopt, std::nullopt, std::nullopt);
 
     file_map.insert(
         std::pair<int, std::vector<std::tuple<size_t, double,
                                               std::vector<ElementVolumeData>>>>(
             i, sorted_volume_data));
-    initial_file.close_current_object();
+    original_file.close_current_object();
   }
 
-  // Append vectors of ElementVolumeData that were split between H5 files for a
-  // given observation id and value
+  // Append vectors of ElementVolumeData that were split between H5 files for
+  // a given observation id and value
   for (size_t i = 1; i < file_names.size(); ++i) {
     for (size_t j = 0; j < file_map.at(0).size(); ++j) {
       std::get<2>(file_map.at(0)[j])
@@ -92,10 +110,10 @@ void combine_h5(const std::string& file_prefix, const std::string& subfile_name,
   }
 
   // Write combined volume data for the output file
-  auto& new_edited_file = new_file.get<h5::VolumeData>("/" + subfile_name);
+  auto& new_volume_file = new_file.get<h5::VolumeData>("/" + subfile_name);
   for (auto const& [observation_id, observation_value, element_data] :
        file_map.at(0)) {
-    new_edited_file.write_volume_data(observation_id, observation_value,
+    new_volume_file.write_volume_data(observation_id, observation_value,
                                       element_data);
   }
 
