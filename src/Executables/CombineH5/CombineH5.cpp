@@ -3,7 +3,7 @@
 
 #include <boost/program_options.hpp>
 #include <cstddef>
-#include <cstdint>  // do we need???
+// #include <cstdint>  // do we need???
 #include <string>
 #include <vector>
 
@@ -14,8 +14,10 @@
 #include "IO/H5/VolumeData.hpp"
 #include "NumericalAlgorithms/Spectral/Spectral.hpp"
 #include "Parallel/Printf.hpp"
+#include "Utilities/FileSystem.hpp"
 
 #include <iostream>
+#include <map>
 #include <typeinfo>
 #include <variant>
 
@@ -30,15 +32,6 @@ size_t data_size(std::variant<DataVector, std::vector<float>> data) {
     return std::get<std::vector<float>>(data).size();
   }
 }
-
-// float data_value(std::variant<DataVector, std::vector<float>> data, size_t
-// index) {
-//   if (data.index() == 0) {
-//     return std::get<DataVector>(data)[index];
-//   } else {
-//     return std::get<std::vector<float>>(data)[index];
-//   }
-// }
 
 TensorComponent group_tensor_component(
     std::string name, std::variant<DataVector, std::vector<float>> data,
@@ -61,94 +54,55 @@ TensorComponent group_tensor_component(
 void combine_h5(const std::string& file_prefix,
                 const std::string& subfile_prefix,
                 const std::string& output_prefix) {
+  std::vector<std::string> file_names = file_system::glob(file_prefix + "*.h5");
+
   // Make new_file
-  h5::H5File<h5::AccessType::ReadWrite> new_file(output_prefix + ".h5", true);
+  h5::H5File<h5::AccessType::ReadWrite> new_file(output_prefix + "0.h5", true);
   // Add .vol path
   auto& new_volume_file =
       new_file.insert<h5::VolumeData>("/" + subfile_prefix + ".vol");
   new_file.close_current_object();
 
-  // Open original file
-  h5::H5File<h5::AccessType::ReadWrite> initial_file(file_prefix + "0" + ".h5",
-                                                     true);
-  auto& volume_file = initial_file.get<h5::VolumeData>("/" + subfile_prefix);
+  std::map<int, std::vector<
+                    std::tuple<size_t, double, std::vector<ElementVolumeData>>>>
+      file_map;
 
-  auto read_observation_ids = volume_file.list_observation_ids();
-  for (size_t i = 0; i < read_observation_ids.size(); ++i) {
-    auto read_observation_value =
-        volume_file.get_observation_value(read_observation_ids[i]);
-    auto read_tensor_components =
-        volume_file.list_tensor_components(read_observation_ids[i]);
-    std::vector<TensorComponent> tensor_component;
-    for (size_t j = 0; j < read_tensor_components.size(); ++j) {
-      tensor_component.push_back(volume_file.get_tensor_component(
-          read_observation_ids[i], read_tensor_components[j]));
-    }
-    auto read_bases = volume_file.get_bases(read_observation_ids[i]);
-    auto read_quadratures =
-        volume_file.get_quadratures(read_observation_ids[i]);
-    auto read_extents = volume_file.get_extents(read_observation_ids[i]);
-    auto read_grid_names = volume_file.get_grid_names(read_observation_ids[i]);
+  // Open original files
+  for (size_t i = 0; i < file_names.size(); ++i) {
+    h5::H5File<h5::AccessType::ReadWrite> initial_file(
+        file_prefix + std::to_string(i) + ".h5", true);
 
-    std::vector<std::vector<TensorComponent>> modified_tensor_component;
-    // for (size_t j = 0; j < tensor_component.size(); ++j) {
-    //   std::string component_name = tensor_component[j].name;
-    //   auto data = tensor_component[j].data;
-    //   auto sub_vector_length = data_size(data)/read_extents.size();
-    //   std::vector<TensorComponent> sub_vector;
-    //   for (size_t k = 0; k < read_extents.size(); ++k) {
+    // Get volume data of file
+    auto& volume_file = initial_file.get<h5::VolumeData>("/" + subfile_prefix);
 
-    //   }
-    // }
-    for (size_t j = 0; j < read_extents.size(); ++j) {
-      std::vector<TensorComponent> sub_vector;
-      for (size_t k = 0; k < tensor_component.size(); ++k) {
-        std::string component_name = tensor_component[k].name;
-        auto data = tensor_component[k].data;
-        auto sub_vector_length = data_size(data) / read_extents.size();
-        sub_vector.push_back(
-            group_tensor_component(component_name, data, j, sub_vector_length));
-      }
-      modified_tensor_component.push_back(sub_vector);
-    }
+    auto sorted_volume_data = volume_file.get_data_by_element(
+        std::nullopt, std::nullopt, std::nullopt);
 
+    file_map.insert(
+        std::pair<int, std::vector<std::tuple<size_t, double,
+                                              std::vector<ElementVolumeData>>>>(
+            i, sorted_volume_data));
     initial_file.close_current_object();
-
-    std::vector<std::vector<Spectral::Basis>> vector_of_bases;
-    // Make correct vector of Spectral::Basis::[name of basis]
-    for (size_t j = 0; j < read_bases.size(); ++j) {
-      std::vector<Spectral::Basis> temp_basis;
-      for (size_t k = 0; k < read_bases[j].size(); ++k) {
-        temp_basis.push_back(Spectral::to_basis(read_bases[j][k]));
-      }
-      vector_of_bases.push_back(temp_basis);
-    }
-
-    std::vector<std::vector<Spectral::Quadrature>> vector_of_quadrature;
-    // Make correct vector of Spectral::Quadrature::[name of quadrature]
-    for (size_t j = 0; j < read_quadratures.size(); ++j) {
-      std::vector<Spectral::Quadrature> temp_quad;
-      for (size_t k = 0; k < read_quadratures[j].size(); ++k) {
-        temp_quad.push_back(Spectral::to_quadrature(read_quadratures[j][k]));
-      }
-      vector_of_quadrature.push_back(temp_quad);
-    }
-
-    std::vector<ElementVolumeData> element_volume_data_vector;
-
-    for (size_t j = 0; j < read_extents.size(); ++j) {
-      element_volume_data_vector.push_back(
-          {read_extents[j], modified_tensor_component[j], vector_of_bases[j],
-           vector_of_quadrature[j], read_grid_names[j]});
-    }
-
-    auto& new_volume_file = new_file.get<h5::VolumeData>("/" + subfile_prefix);
-    new_volume_file.write_volume_data(read_observation_ids[i],
-                                      read_observation_value,
-                                      element_volume_data_vector);
-
-    new_file.close_current_object();
   }
+
+  // Append vectors of ElementVolumeData split between H5 files for a given
+  // observation id and value
+  for (size_t i = 1; i < file_names.size(); ++i) {
+    std::get<2>(file_map.at(0)[0])
+        .insert(std::get<2>(file_map.at(0)[0]).end(),
+                std::get<2>(file_map.at(i)[0]).begin(),
+                std::get<2>(file_map.at(i)[0]).end());
+  }
+
+  // Write combined volume data for new file
+  auto& new_edited_file = new_file.get<h5::VolumeData>("/" + subfile_prefix);
+  for (auto const& [observation_id, observation_value, element_data] :
+       file_map.at(0)) {
+    new_edited_file.write_volume_data(observation_id, observation_value,
+                                      element_data);
+  }
+
+  new_file.close_current_object();
 }
 
 int main(int argc, char** argv) {
