@@ -17,4 +17,5 @@ target_link_libraries(
   DataStructures
   IO
   Parallel # Only for printf
+  Utilities
   )
