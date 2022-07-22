@@ -31,12 +31,14 @@ bool check_src_files(const std::vector<std::string> file_names) {
       initial_file.get<h5::SourceArchive>("/src");
   const std::vector<char>& src_tar_initial =
       src_archive_object_initial.get_archive();
+  initial_file.close_current_object();
   for (size_t i = 1; i < file_names.size(); ++i) {
     h5::H5File<h5::AccessType::ReadWrite> comparison_file(file_names[i], true);
     auto& src_archive_object_compare =
         comparison_file.get<h5::SourceArchive>("/src");
     const std::vector<char>& src_tar_compare =
         src_archive_object_compare.get_archive();
+    comparison_file.close_current_object();
 
     if (src_tar_initial != src_tar_compare) {
       return false;
