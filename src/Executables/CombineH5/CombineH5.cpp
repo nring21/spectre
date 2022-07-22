@@ -8,16 +8,12 @@
 #include <vector>
 
 #include "DataStructures/DataVector.hpp"
-#include "DataStructures/Tensor/TensorData.hpp"
 #include "IO/H5/AccessType.hpp"
 #include "IO/H5/File.hpp"
 #include "IO/H5/SourceArchive.hpp"
 #include "IO/H5/VolumeData.hpp"
-#include "NumericalAlgorithms/Spectral/Spectral.hpp"
 #include "Parallel/Printf.hpp"
 #include "Utilities/FileSystem.hpp"
-
-#include <iostream>
 
 // Charm looks for this function but since we build without a main function or
 // main module we just have it be empty
@@ -31,21 +27,18 @@ bool check_src_files(const std::vector<std::string> file_names) {
       initial_file.get<h5::SourceArchive>("/src");
   const std::vector<char>& src_tar_initial =
       src_archive_object_initial.get_archive();
-  initial_file.close_current_object();
   for (size_t i = 1; i < file_names.size(); ++i) {
     h5::H5File<h5::AccessType::ReadWrite> comparison_file(file_names[i], true);
     auto& src_archive_object_compare =
         comparison_file.get<h5::SourceArchive>("/src");
     const std::vector<char>& src_tar_compare =
         src_archive_object_compare.get_archive();
-    comparison_file.close_current_object();
 
     if (src_tar_initial != src_tar_compare) {
       return false;
     }
   }
-  return true;  // Ask if should have a static_assert() to check that there
-                // exists more than one file to combine in the directory
+  return true;
 }
 
 void combine_h5(const std::string& file_prefix, const std::string& subfile_name,
@@ -60,20 +53,10 @@ void combine_h5(const std::string& file_prefix, const std::string& subfile_name,
         "files, meaning that they may be from differing versions of SpECTRE.");
   }
 
-  // THIS IS FOR SAVING src.tar.gz INFO
-  // h5::H5File<h5::AccessType::ReadWrite> initial_file(file_names[0], true);
-  // auto& src_archive_object_initial =
-  //     initial_file.get<h5::SourceArchive>("/src");
-  // const std::vector<char>& src_tar_initial =
-  //     src_archive_object_initial.get_archive();
-  // initial_file.close_current_object();
-
   // Instantiates the output file and the .vol subfile to be filled with the
   // combined data later
   h5::H5File<h5::AccessType::ReadWrite> new_file(output + "0.h5", true);
   new_file.insert<h5::VolumeData>("/" + subfile_name + ".vol");
-  // new_file_new_file.get<h5::SourceArchive>("/src"); // THIS IS FOR SAVING
-  // src.tar.gz INFO
   new_file.close_current_object();
 
   // std::map to store the sorted volume data
@@ -122,6 +105,10 @@ void combine_h5(const std::string& file_prefix, const std::string& subfile_name,
   new_file.close_current_object();
 }
 
+/*
+ * This executable is used for combining a series of HDF5 volume files into one
+ * continuous dataset to be stored in a single HDF5 volume file.
+ */
 int main(int argc, char** argv) {
   boost::program_options::positional_options_description pos_desc;
 
