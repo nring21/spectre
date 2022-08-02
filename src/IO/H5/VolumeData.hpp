@@ -100,6 +100,10 @@ class VolumeData : public h5::Object {
   void write_volume_data(size_t observation_id, double observation_value,
                          const std::vector<ElementVolumeData>& elements);
 
+  /// Writes new connectivity within each block in the domain for each
+  /// observation id in a list of observation id's
+  void write_new_connectivity_data(const std::vector<size_t>& observation_ids);
+
   /// List all the integral observation ids in the subfile
   ///
   /// The list of observation IDs is sorted by their observation value, as
