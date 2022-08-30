@@ -39,8 +39,6 @@
 #include "Utilities/Numeric.hpp"
 #include "Utilities/StdHelpers.hpp"
 
-#include <iostream>
-
 namespace h5 {
 namespace {
 // Append the element extents and connectevity to the total extents and
@@ -334,8 +332,6 @@ std::vector<std::array<double, 3>> generate_block_logical_coordinates(
 // Sorting routine for an incoming list of values
 std::vector<double> sort_and_order(std::vector<double>& unsorted_coordinate) {
   std::vector<double> sorted_coordinate;
-  // Come up with way to figure out unsorted_coordinate length. Maybe number of
-  // grid points???
   sort(unsorted_coordinate.begin(), unsorted_coordinate.end());
   sorted_coordinate.push_back(unsorted_coordinate[0]);
   for (size_t i = 1; i < unsorted_coordinate.size(); ++i) {
@@ -699,9 +695,9 @@ void VolumeData::write_new_connectivity_data(
       auto block_number = j;
       auto connectivity_of_keys = generate_new_connectivity(
           block_logical_coordinates_by_block[j], block_number);
-      for (const std::pair<size_t, std::array<double, 3>>& it :
+      for (const std::pair<size_t, std::array<double, 3>>& i :
            connectivity_of_keys) {
-        new_connectivity.push_back(block_and_grid_point_map[it]);
+        new_connectivity.push_back(block_and_grid_point_map[i]);
       }
     }
 
