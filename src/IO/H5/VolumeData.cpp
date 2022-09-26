@@ -39,6 +39,8 @@
 #include "Utilities/Numeric.hpp"
 #include "Utilities/StdHelpers.hpp"
 
+#include <iostream>
+
 namespace h5 {
 namespace {
 // Append the element extents and connectevity to the total extents and
