@@ -28,6 +28,7 @@
 #include "IO/H5/Version.hpp"
 #include "NumericalAlgorithms/Spectral/Mesh.hpp"
 #include "NumericalAlgorithms/Spectral/Spectral.hpp"
+#include "Parallel/Printf.hpp"
 #include "Utilities/Algorithm.hpp"
 #include "Utilities/ErrorHandling/Assert.hpp"
 #include "Utilities/ErrorHandling/Error.hpp"
@@ -38,8 +39,6 @@
 #include "Utilities/MakeString.hpp"
 #include "Utilities/Numeric.hpp"
 #include "Utilities/StdHelpers.hpp"
-
-#include <iostream>
 
 namespace h5 {
 namespace {
@@ -697,9 +696,9 @@ void VolumeData::write_new_connectivity_data(
       auto block_number = j;
       auto connectivity_of_keys = generate_new_connectivity(
           block_logical_coordinates_by_block[j], block_number);
-      for (const std::pair<size_t, std::array<double, 3>>& i :
+      for (const std::pair<size_t, std::array<double, 3>>& k :
            connectivity_of_keys) {
-        new_connectivity.push_back(block_and_grid_point_map[i]);
+        new_connectivity.push_back(block_and_grid_point_map[k]);
       }
     }
 
@@ -711,7 +710,7 @@ void VolumeData::write_new_connectivity_data(
     H5Ldelete(group_id, "connectivity", H5P_DEFAULT);
     write_connectivity(group_id, new_connectivity);
     if (print_size == true) {
-      std::cout << "connectivity length: " << new_connectivity.size() << "\n";
+      Parallel::printf("connectivity length: %i\n", new_connectivity.size());
     }
   }
 }
