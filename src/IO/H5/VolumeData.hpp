@@ -100,8 +100,9 @@ class VolumeData : public h5::Object {
   void write_volume_data(size_t observation_id, double observation_value,
                          const std::vector<ElementVolumeData>& elements);
 
-  /// Writes new connectivity within each block in the domain for each
-  /// observation id in a list of observation id's
+  /// Overwrites the current connectivity dataset with a new one. This new
+  /// connectivity dataset builds connectivity within each block in the domain
+  /// for each observation id in a list of observation id's
   template <size_t SpatialDim>
   void extend_connectivity_data(const std::vector<size_t>& observation_ids);
 
